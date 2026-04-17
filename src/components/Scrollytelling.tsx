@@ -1,10 +1,6 @@
 import React from 'react';
 import { 
-  ShieldAlert, Cpu, Zap, 
-  ShieldCheck, ChevronDown, 
-  Layers, Terminal, Globe,
-  AlertTriangle, Target, Activity,
-  Users, Calendar, CheckCircle2
+  ShieldAlert, ShieldCheck, ChevronDown
 } from 'lucide-react';
 
 const Scrollytelling: React.FC = () => {

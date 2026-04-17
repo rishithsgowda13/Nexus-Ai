@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { 
   ShieldAlert, Activity, LayoutDashboard, Crosshair, 
-  BookOpen, Settings, Bell, Search, User, Filter, AlertTriangle, ShieldCheck
+  BookOpen, Settings, Bell, Search, User, Filter, AlertTriangle, ShieldCheck, ChevronDown
 } from 'lucide-react';
 import { 
   AreaChart, Area, XAxis, YAxis, CartesianGrid, 
@@ -9,6 +9,7 @@ import {
 } from 'recharts';
 import { initialThreats, generateRandomEvent } from './data/mockData';
 import type { ThreatAlert } from './data/mockData';
+import Scrollytelling from './components/Scrollytelling';
 import './index.css';
 
 const App = () => {
@@ -57,7 +58,9 @@ const App = () => {
   const highCount = threats.filter(t => t.severity === 'High').length;
 
   return (
-    <div className="app-container">
+    <div className="scrolly-container">
+      <Scrollytelling />
+      <div className="app-container">
       {/* Sidebar */}
       <aside className="sidebar glass-panel" style={{ borderLeft: 'none', borderTop: 'none', borderBottom: 'none', borderRight: '1px solid var(--panel-border)', borderRadius: 0 }}>
         <div className="logo-container">
@@ -68,6 +71,10 @@ const App = () => {
         <div className="nav-item active">
           <LayoutDashboard size={20} />
           <span>SOC Dashboard</span>
+        </div>
+        <div className="nav-item" onClick={() => document.querySelector('.scrolly-container')?.scrollTo({ top: 0, behavior: 'smooth' })}>
+          <ChevronDown size={20} style={{ transform: 'rotate(180deg)' }} />
+          <span>Back to Intro</span>
         </div>
         <div className="nav-item">
           <Crosshair size={20} />
@@ -107,8 +114,8 @@ const App = () => {
             </div>
             <Bell size={20} style={{ cursor: 'pointer', color: 'var(--text-main)' }} />
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
-              <div style={{ width: '36px', height: '36px', borderRadius: '50%', background: 'rgba(69, 250, 221, 0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <User size={20} color="var(--accent-cyan)" />
+              <div style={{ width: '36px', height: '36px', borderRadius: '50%', background: 'rgba(212, 175, 55, 0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <User size={20} color="var(--accent-gold)" />
               </div>
               <span style={{ fontSize: '14px', fontWeight: 600 }}>Lead Analyst</span>
             </div>
@@ -122,7 +129,7 @@ const App = () => {
               <div className="stat-title">Signals Ingested (24h)</div>
               <div className="stat-value">
                 {(stats.total / 1000000).toFixed(2)}M
-                <span className="stat-trend" style={{ color: '#00d2ff' }}>+12%</span>
+                <span className="stat-trend" style={{ color: 'var(--accent-gold)' }}>+12%</span>
               </div>
             </div>
             <div className="glass-panel stat-card">
@@ -318,6 +325,7 @@ const App = () => {
           </div>
         </div>
       )}
+      </div>
     </div>
   );
 };

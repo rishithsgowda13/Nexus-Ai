@@ -103,11 +103,11 @@ export default function Dashboard({ user, onLogout }) {
             animation: 'glow-border 3s ease-in-out infinite',
             boxShadow: '0 0 20px rgba(0,212,255,0.04)',
           }}>
-            <Shield size={26} color="#00d4ff" />
+            <img src="/icon.png" alt="Nexus AI" style={{ width: '60%', height: '60%', objectFit: 'contain' }} />
           </div>
           <span style={{
             fontFamily: 'Orbitron, sans-serif', fontWeight: 800,
-            fontSize: '1rem', color: '#00d4ff',
+            fontSize: '1rem', color: '#ff8c42',
             letterSpacing: '0.2em',
             textShadow: '0 0 20px rgba(0,212,255,0.2)',
           }}>NEXUS.AI</span>

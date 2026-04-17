@@ -12,7 +12,7 @@ export default function Auth({ onLogin }) {
     { icon: Layers, label: "INGEST", desc: "Data Normalization", color: "#00d4ff" },
     { icon: Cpu, label: "DETECT", desc: "ML Classification", color: "#a855f7" },
     { icon: GitBranch, label: "CORRELATE", desc: "Event Fusion", color: "#00ff88" },
-    { icon: FileText, label: "OUTPUT", desc: "SOC Explainability", color: "#ff8c42" },
+    { icon: FileText, label: "OUTPUT", desc: "SOC Explainability", color: "var(--orange)" },
   ];
 
   // Floating particles
@@ -90,7 +90,7 @@ export default function Auth({ onLogin }) {
             boxShadow: '0 0 40px rgba(0,212,255,0.05)',
           }}
         >
-          <Shield size={38} color="#00d4ff" />
+          <img src="/icon.png" alt="Nexus AI" style={{ width: '70%', height: '70%', objectFit: 'contain' }} />
         </motion.div>
 
         <h1 style={{
@@ -99,7 +99,7 @@ export default function Auth({ onLogin }) {
           color: '#fff', letterSpacing: '0.05em',
           marginBottom: 8,
         }}>
-          NEXUS<span style={{ color: '#00d4ff' }}>.AI</span>
+          NEXUS<span style={{ color: 'var(--orange)' }}>.AI</span>
         </h1>
         <p style={{
           fontSize: '0.65rem',

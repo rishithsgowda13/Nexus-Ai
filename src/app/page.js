@@ -59,10 +59,10 @@ function LoadingScreen({ onComplete }) {
         <div className="loading-hex-ring">
           <div className="ring-dot" />
         </div>
-        <div className="loading-logo">N</div>
+        <img src="/icon.png" alt="Nexus AI" style={{ width: '80%', height: '80%', objectFit: 'contain' }} />
       </div>
 
-      <div className="loading-title">NEXUS<span style={{ color: '#00d4ff' }}>.AI</span></div>
+      <div className="loading-title">NEXUS<span style={{ color: '#ff8c42' }}>.AI</span></div>
       <div className="loading-subtitle">Advanced Threat Intelligence Platform</div>
 
       {/* Progress bar */}

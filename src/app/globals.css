@@ -1,21 +1,21 @@
 @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700;800;900&family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@300;400;500;600;700&display=swap');
 
 :root {
-  --accent: #00d4ff;
-  --accent-dim: rgba(0, 212, 255, 0.08);
-  --accent-glow: rgba(0, 212, 255, 0.25);
-  --accent-mid: rgba(0, 212, 255, 0.15);
-  --accent-strong: rgba(0, 212, 255, 0.5);
-  --green: #00ff88;
+  --accent: #00e5ff;
+  --accent-dim: rgba(0, 229, 255, 0.08);
+  --accent-glow: rgba(0, 229, 255, 0.25);
+  --accent-mid: rgba(0, 229, 255, 0.15);
+  --accent-strong: rgba(0, 229, 255, 0.5);
+  --green: #00ff9d;
   --red: #ff3b5c;
-  --orange: #ff8c42;
-  --purple: #a855f7;
+  --orange: #ff9d00;
+  --purple: #bf00ff;
   --surface: rgba(255, 255, 255, 0.02);
-  --border: rgba(255, 255, 255, 0.06);
-  --border-hover: rgba(0, 212, 255, 0.2);
-  --text-primary: #e8eaed;
-  --text-secondary: rgba(255, 255, 255, 0.4);
-  --text-muted: rgba(255, 255, 255, 0.2);
+  --border: rgba(255, 255, 255, 0.08);
+  --border-hover: rgba(255, 157, 0, 0.3);
+  --text-primary: #f0f2f5;
+  --text-secondary: rgba(255, 255, 255, 0.5);
+  --text-muted: rgba(255, 255, 255, 0.25);
 }
 
 * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -24,9 +24,10 @@ html, body {
   font-family: 'Inter', sans-serif;
   background-color: #050505;
   background-image: 
-    linear-gradient(rgba(255, 160, 60, 0.03) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255, 160, 60, 0.03) 1px, transparent 1px);
+    linear-gradient(rgba(255, 160, 60, 0.1) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 160, 60, 0.1) 1px, transparent 1px);
   background-size: 50px 50px;
+  background-attachment: fixed;
   color: var(--text-primary);
   overflow-x: hidden;
   -webkit-font-smoothing: antialiased;
@@ -50,8 +51,8 @@ body::before {
 .grid-bg {
   position: relative;
   background-image: 
-    linear-gradient(rgba(255, 160, 60, 0.02) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255, 160, 60, 0.02) 1px, transparent 1px);
+    linear-gradient(rgba(255, 160, 60, 0.08) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 160, 60, 0.08) 1px, transparent 1px);
   background-size: 50px 50px;
 }
 
@@ -517,8 +518,8 @@ body::before {
   position: absolute;
   inset: 0;
   background-image:
-    linear-gradient(rgba(255, 160, 60, 0.02) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255, 160, 60, 0.02) 1px, transparent 1px);
+    linear-gradient(rgba(255, 160, 60, 0.08) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 160, 60, 0.08) 1px, transparent 1px);
   background-size: 40px 40px;
   animation: grid-drift 8s linear infinite;
 }

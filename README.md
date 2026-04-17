@@ -26,6 +26,41 @@
 - **Neural Threat Stream**: Live visualization of system events and anomalies.
 - **Aesthetic Excellence**: Dark-mode primary UI with glassmorphic cards and animated background grids.
 
+### 🔑 BIOMETRIC INITIALIZATION
+To access the command center, operators must undergo a **Neural Biometric Sync**:
+1. Enter operator credentials.
+2. Click **"INITIALIZE NEURAL LINK"**.
+3. The system will perform an adaptive scan, compensating for backlight and environmental noise, granting access only to authorized neural signatures.
+
+## 🛠️ SETUP & DEPLOYMENT
+
+### 🐍 Backend (Neural Pipeline)
+1. Navigate to the root directory.
+2. Install Python dependencies:
+   ```bash
+   pip install fastapi uvicorn opencv-python numpy
+   ```
+3. Initialize the neural core:
+   ```bash
+   python server.py
+   ```
+
+### ⚛️ Frontend (Command Center)
+1. Install node dependencies:
+   ```bash
+   npm install
+   ```
+2. Configure `.env` with your Supabase credentials.
+3. Launch the dashboard:
+   ```bash
+   npm run dev
+   ```
+
+---
+<div align="center">
+  <sub>SECURED BY NEXUS NEURAL ARCHITECTURE v2.0</sub>
+</div>
+
 ## 🛠️ Technology Stack
 
 | Component | Technology |

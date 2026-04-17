@@ -315,8 +315,49 @@ export default function Dashboard({ user, onLogout }) {
                 {activeTab === 'overview' && <OverviewTab key="ov" stats={stats} threats={threats} />}
                 {activeTab === 'threats' && <OverviewTab key="th" stats={stats} threats={threats} />}
                 {activeTab === 'nexus-ai' && (
-                  <motion.div key="ai" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} style={{ height: '100%' }}>
-                    <AIChat />
+                  <motion.div 
+                    key="ai" 
+                    initial={{ opacity: 0, y: 20 }} 
+                    animate={{ opacity: 1, y: 0 }} 
+                    exit={{ opacity: 0, y: -20 }} 
+                    style={{ height: 'calc(100vh - 160px)', display: 'flex', flexDirection: 'column', gap: 24 }}
+                  >
+                    {/* Upper Intelligence Sector */}
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24, flex: 1, minHeight: 0 }}>
+                      <div className="glass-card" style={{ display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+                        <div style={{ padding: '16px 20px', borderBottom: '1px solid rgba(255,255,255,0.05)', display: 'flex', alignItems: 'center', gap: 10 }}>
+                          <Radio size={14} className="pulse-text" style={{ color: 'var(--accent)' }} />
+                          <h3 style={{ fontSize: '0.75rem', fontWeight: 800, margin: 0, letterSpacing: '0.1em', color: 'var(--accent)' }}>LIVE NEURAL STREAM</h3>
+                        </div>
+                        <div style={{ flex: 1, overflowY: 'auto', padding: 20 }}>
+                          <ThreatFeed threats={threats} />
+                        </div>
+                      </div>
+                      
+                      <div className="glass-card" style={{ display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+                        <div style={{ padding: '16px 20px', borderBottom: '1px solid rgba(255,255,255,0.05)', display: 'flex', alignItems: 'center', gap: 10 }}>
+                          <MessageSquare size={14} style={{ color: 'var(--accent)' }} />
+                          <h3 style={{ fontSize: '0.75rem', fontWeight: 800, margin: 0, letterSpacing: '0.1em', color: 'var(--accent)' }}>NEXUS AI ANALYST</h3>
+                        </div>
+                        <div style={{ flex: 1, overflow: 'hidden' }}>
+                          <AIChat />
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Tactical Action Deck */}
+                    <div className="glass-card" style={{ padding: '16px 24px', display: 'flex', alignItems: 'center', gap: 16 }}>
+                      <span style={{ fontSize: '0.65rem', fontWeight: 800, color: 'rgba(255,255,255,0.25)', letterSpacing: '0.2em' }}>TACTICAL ACTIONS:</span>
+                      <div style={{ display: 'flex', gap: 12, flex: 1 }}>
+                        <ActionButton icon={Shield} label="DEFEND SYSTEM" color="#f5c542" />
+                        <ActionButton icon={Play} label="EXPLAIN THREAT" color="#ffa600" />
+                        <ActionButton icon={XCircle} label="ISOLATE NODE" color="#ff3b5c" />
+                        <ActionButton icon={Zap} label="NEUTRALIZE" color="#ff8400" />
+                      </div>
+                      <div style={{ padding: '8px 16px', background: 'rgba(245,197,66,0.05)', border: '1px solid rgba(245,197,66,0.1)', borderRadius: 8 }}>
+                         <span className="pulse-text" style={{ fontSize: '0.6rem', fontWeight: 700, color: 'var(--accent)', letterSpacing: '0.1em' }}>NEURAL LINK: ENCRYPTED</span>
+                      </div>
+                    </div>
                   </motion.div>
                 )}
                 {activeTab === 'settings' && (
@@ -441,3 +482,23 @@ function OverviewTab({ stats, threats }) {
     </motion.div>
   );
 }
+
+function ActionButton({ icon: Icon, label, color }) {
+  return (
+    <button className="glass-card" style={{
+      display: 'flex', alignItems: 'center', gap: 8,
+      padding: '8px 16px', borderRadius: 8,
+      border: `1px solid ${color}22`,
+      background: 'rgba(255,255,255,0.02)',
+      cursor: 'pointer',
+      transition: 'all 0.3s',
+    }}
+    onMouseEnter={e => { e.currentTarget.style.background = `${color}11`; e.currentTarget.style.borderColor = `${color}44`; }}
+    onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.02)'; e.currentTarget.style.borderColor = `${color}22`; }}
+    >
+      <Icon size={14} color={color} />
+      <span style={{ fontSize: '0.6rem', fontWeight: 700, color: 'rgba(255,255,255,0.7)', letterSpacing: '0.05em' }}>{label}</span>
+    </button>
+  );
+}
+

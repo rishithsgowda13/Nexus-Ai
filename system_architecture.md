@@ -19,30 +19,30 @@ Organizations face advanced cyber threats that traditional, rule-based systems s
 ```mermaid
 graph TD
     subgraph Signal Ingestion Layer
-        A1[Network Logs<br/>Simulated PCAP] --> B[Log Normalizer & Unified Event Bus]
-        A2[Endpoint Logs<br/>Simulated Sysmon] --> B
-        A3[Application Logs<br/>Simulated Web/API] --> B
+        A1["Network Logs Simulated PCAP"] --> B["Log Normalizer & Unified Event Bus"]
+        A2["Endpoint Logs Simulated Sysmon"] --> B
+        A3["Application Logs Simulated Web/API"] --> B
     end
 
     subgraph AI Detection Core
-        B --> C[Behavioral Threat Detection Engine]
-        C --> D1[Brute Force Classifier]
-        C --> D2[Lateral Movement Classifier]
-        C --> D3[C2 Beaconing Classifier]
-        C --> D4[Data Exfil Classifier]
+        B --> C["Behavioral Threat Detection Engine"]
+        C --> D1["Brute Force Classifier"]
+        C --> D2["Lateral Movement Classifier"]
+        C --> D3["C2 Beaconing Classifier"]
+        C --> D4["Data Exfil Classifier"]
     end
 
     subgraph Correlation & Explainability
-        D1 & D2 & D3 & D4 --> E[Cross-Layer Correlator]
-        E --> F[Explainability Generator LLM]
-        F --> G[Playbook Generator]
+        D1 & D2 & D3 & D4 --> E["Cross-Layer Correlator"]
+        E --> F["Explainability Generator LLM"]
+        F --> G["Playbook Generator"]
     end
 
     subgraph SOC Dashboard Presentation Layer
-        G --> H[Live Threat Dashboard UI]
-        H --> I1[Real-Time Threat Feed]
-        H --> I2[Contextual Modal Visualiser]
-        H --> I3[Automated Mitigation Trigger]
+        G --> H["Live Threat Dashboard UI"]
+        H --> I1["Real-Time Threat Feed"]
+        H --> I2["Contextual Modal Visualiser"]
+        H --> I3["Automated Mitigation Trigger"]
     end
 ```
 

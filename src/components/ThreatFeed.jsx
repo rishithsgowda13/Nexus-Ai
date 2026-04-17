@@ -1,99 +1,80 @@
 "use client";
-import React from 'react';
-import { ShieldAlert, ShieldCheck, Clock, ExternalLink } from 'lucide-react';
+import { ShieldAlert, ShieldCheck, Clock, ExternalLink, Layers } from 'lucide-react';
+import { motion } from 'framer-motion';
 
-const ThreatFeed = () => {
-  const threats = [
-    {
-      id: 'TX-9421',
-      source: '192.168.1.105',
-      type: 'SQL Injection Attempt',
-      mlScore: 0.98,
-      status: 'Genuine',
-      time: '2 mins ago',
-      severity: 'Critical'
-    },
-    {
-      id: 'TX-9420',
-      source: '10.0.4.12',
-      type: 'Brute Force SSH',
-      mlScore: 0.12,
-      status: 'False Positive',
-      time: '5 mins ago',
-      severity: 'Low'
-    },
-    {
-      id: 'TX-9419',
-      source: 'Internal Scanner',
-      type: 'Port Scan Detection',
-      mlScore: 0.05,
-      status: 'False Positive',
-      time: '12 mins ago',
-      severity: 'Info'
-    },
-    {
-      id: 'TX-9418',
-      source: '213.44.12.9',
-      type: 'XSS Payload Detected',
-      mlScore: 0.89,
-      status: 'Genuine',
-      time: '18 mins ago',
-      severity: 'High'
-    },
-    {
-      id: 'TX-9417',
-      source: '45.12.1.22',
-      type: 'DDoS Pattern Recognized',
-      mlScore: 0.95,
-      status: 'Genuine',
-      time: '24 mins ago',
-      severity: 'Critical'
-    }
-  ];
+const sevClass = { Critical: 'badge-critical', High: 'badge-high', Medium: 'badge-high', Low: 'badge-low', Info: 'badge-info' };
+
+export default function ThreatFeed({ threats = [] }) {
+
+  if (threats.length === 0) {
+    return (
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 16 }}>
+        <ShieldCheck size={40} color="#333" />
+        <p style={{ fontSize: '0.8rem', color: '#444', fontWeight: 600 }}>No threats detected yet</p>
+        <p style={{ fontSize: '0.65rem', color: '#333' }}>Click <strong>"Run Simulation"</strong> to process sample logs through the 4-layer pipeline</p>
+      </div>
+    );
+  }
 
   return (
-    <div className="flex-1 overflow-y-auto space-y-4 pr-2 custom-scrollbar">
-      {threats.map((threat) => (
-        <div key={threat.id} className="group p-5 bg-white-5 hover:bg-white-10 border border-white-5 rounded-2xl transition-all flex items-center justify-between">
-          <div className="flex items-center gap-6">
-            <div className={`p-4 rounded-xl ${
-              threat.status === 'Genuine' ? 'bg-danger-20 text-danger' : 'bg-success-20 text-success'
-            }`}>
-              {threat.status === 'Genuine' ? <ShieldAlert size={22} /> : <ShieldCheck size={22} />}
+    <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 10 }}>
+      {threats.map((t, i) => {
+        const alert = t.alert || {};
+        const sev = alert.severity || 'Info';
+        const isGenuine = alert.status === 'Genuine';
+
+        return (
+          <motion.div
+            key={t.id || i}
+            initial={{ opacity: 0, x: -10 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: i * 0.04 }}
+            className="threat-row"
+            style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: 18 }}>
+              <div style={{ width: 44, height: 44, borderRadius: 12, display: 'flex', alignItems: 'center', justifyContent: 'center', background: isGenuine ? 'rgba(239,68,68,0.08)' : 'rgba(0,255,136,0.06)' }}>
+                {isGenuine ? <ShieldAlert size={20} color="#ef4444" /> : <ShieldCheck size={20} color="#00ff88" />}
+              </div>
+              <div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4, flexWrap: 'wrap' }}>
+                  <span style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: '0.6rem', color: '#555', letterSpacing: '0.1em' }}>{t.id}</span>
+                  <span className={`badge ${sevClass[sev] || 'badge-info'}`}>{sev}</span>
+                  <span style={{ fontSize: '0.58rem', fontWeight: 700, color: '#D4AF37', background: 'rgba(212,175,55,0.08)', padding: '2px 8px', borderRadius: 4 }}>
+                    ML {alert.confidence_score || 0}%
+                  </span>
+                  <span style={{ fontSize: '0.52rem', color: '#555', background: 'rgba(255,255,255,0.03)', padding: '2px 6px', borderRadius: 4 }}>
+                    {t.raw_source?.toUpperCase()}
+                  </span>
+                </div>
+                <p style={{ fontSize: '0.92rem', fontWeight: 700, color: '#fff', marginBottom: 4 }}>{alert.threat_type || 'Unknown'}</p>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12, fontSize: '0.68rem', color: '#555' }}>
+                  <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}><Clock size={12} color="#D4AF37" /> {t.timestamp}</span>
+                  <span style={{ width: 3, height: 3, borderRadius: '50%', background: '#333' }} />
+                  <span>{alert.source || 'N/A'}</span>
+                  {alert.cross_layer_match && (
+                    <>
+                      <span style={{ width: 3, height: 3, borderRadius: '50%', background: '#333' }} />
+                      <span style={{ color: '#D4AF37', display: 'flex', alignItems: 'center', gap: 4 }}><Layers size={11} /> {alert.cross_layer_match}</span>
+                    </>
+                  )}
+                </div>
+              </div>
             </div>
-            <div>
-              <div className="flex items-center gap-3">
-                <span className="font-mono text-xs text-text-secondary uppercase tracking-widest">{threat.id}</span>
-                <span className={`text-xs px-2 py-0.5 rounded-md font-bold text-white uppercase tracking-wider ${
-                  threat.status === 'Genuine' ? 'bg-danger' : 'bg-accent text-black'
-                }`}>
-                  {threat.severity}
+
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 8 }}>
+              <span className={`badge ${isGenuine ? 'badge-genuine' : 'badge-fp'}`} style={{ padding: '4px 12px' }}>
+                {alert.status}
+              </span>
+              {t.playbook && (
+                <span style={{ fontSize: '0.5rem', color: '#D4AF37', fontWeight: 600, letterSpacing: '0.1em' }}>
+                  {t.playbook.length} STEPS
                 </span>
-                <span className="text-xs text-accent font-bold uppercase tracking-widest bg-accent-5 px-2 py-0.5">ML {Math.round(threat.mlScore * 100)}% Match</span>
-              </div>
-              <p className="font-bold text-lg mt-1 tracking-tight text-white">{threat.type}</p>
-              <div className="flex items-center gap-4 mt-2 text-xs text-text-secondary font-medium">
-                <span className="flex items-center gap-1.5"><Clock size={14} className="text-accent" /> {threat.time}</span>
-                <span className="w-1 h-1 bg-white-10 rounded-full"></span>
-                <span>ORIGIN: {threat.source}</span>
-              </div>
+              )}
             </div>
-          </div>
-          
-          <div className="flex flex-col items-end gap-3">
-            <div className={`text-xs font-black tracking-widest ${
-              threat.status === 'Genuine' ? 'text-danger' : 'text-success'
-            }`}>
-              {threat.status.toUpperCase()}
-            </div>
-            <button className="p-2 bg-white-5 rounded-lg hover:bg-accent hover:text-black transition-all border-none cursor-pointer">
-              <ExternalLink size={16} />
-            </button>
-          </div>
-        </div>
-      ))}
+          </motion.div>
+        );
+      })}
     </div>
   );
-};
-
-export default ThreatFeed;
+}

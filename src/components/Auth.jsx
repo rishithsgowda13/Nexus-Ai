@@ -1,12 +1,18 @@
 "use client";
-import React, { useState } from 'react';
-import { Shield, Lock, User } from 'lucide-react';
+import { useState } from 'react';
+import { Shield, Lock, User, Layers, Cpu, GitBranch, FileText } from 'lucide-react';
 import { motion } from 'framer-motion';
 
-const Auth = ({ onLogin }) => {
-  const [isLogin, setIsLogin] = useState(true);
+export default function Auth({ onLogin }) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+
+  const layers = [
+    { icon: Layers, label: "INGEST", desc: "Data Normalization" },
+    { icon: Cpu, label: "DETECT", desc: "ML Classification" },
+    { icon: GitBranch, label: "CORRELATE", desc: "Event Fusion" },
+    { icon: FileText, label: "OUTPUT", desc: "SOC Explainability" },
+  ];
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -14,83 +20,100 @@ const Auth = ({ onLogin }) => {
   };
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen p-4 grid-bg relative">
-      <div className="absolute top-8 left-8 flex items-center gap-3">
-         <span className="w-2 h-2 rounded-full bg-success animate-pulse"></span>
-         <span className="text-xs uppercase tracking-widest font-medium text-text-secondary">System Online</span>
+    <div className="grid-bg scanline" style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '2rem', position: 'relative' }}>
+      
+      {/* Top bar */}
+      <div style={{ position: 'absolute', top: 24, left: 32, display: 'flex', alignItems: 'center', gap: 10 }}>
+        <div className="pulse-dot" />
+        <span style={{ fontSize: '0.7rem', letterSpacing: '0.3em', color: '#666', textTransform: 'uppercase', fontWeight: 600 }}>System Status: Online</span>
+      </div>
+      <div style={{ position: 'absolute', top: 24, right: 32 }}>
+        <span style={{ fontSize: '0.7rem', letterSpacing: '0.2em', color: '#444', textTransform: 'uppercase', fontWeight: 500 }}>Nexus.AI v2.0</span>
       </div>
 
-      <motion.div 
-        initial={{ opacity: 0, scale: 0.95 }}
-        animate={{ opacity: 1, scale: 1 }}
-        transition={{ duration: 0.5, ease: "easeOut" }}
-        className="w-full max-w-xl flex flex-col items-center"
+      <motion.div
+        initial={{ opacity: 0, y: 30 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
+        style={{ width: '100%', maxWidth: 520, display: 'flex', flexDirection: 'column', alignItems: 'center' }}
       >
-        <div className="flex flex-col items-center mb-12">
-          <motion.div 
-            whileHover={{ scale: 1.05, rotate: [0, -5, 5, 0] }}
-            className="w-16 h-16 border border-accent flex items-center justify-center rounded-xl mb-6 bg-black shadow-gold cursor-pointer"
-          >
-             <Shield size={32} className="text-accent" />
-          </motion.div>
-          <h1 className="brand-font text-4xl text-accent tracking-tighter mb-2">NEXUS.AI</h1>
-          <p className="text-xs uppercase tracking-widest text-text-secondary font-semibold">Intelligence Gateway</p>
+        {/* Logo */}
+        <motion.div
+          className="float-animation glow-border-animation"
+          style={{ width: 72, height: 72, border: '2px solid rgba(212,175,55,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: 18, marginBottom: 24, background: '#000' }}
+        >
+          <Shield size={36} color="#D4AF37" />
+        </motion.div>
+
+        <h1 style={{ fontFamily: 'Montserrat, sans-serif', fontWeight: 900, fontSize: '2.8rem', color: '#D4AF37', letterSpacing: '-0.03em', marginBottom: 6 }}>NEXUS.AI</h1>
+        <p style={{ fontSize: '0.7rem', letterSpacing: '0.5em', color: '#666', textTransform: 'uppercase', fontWeight: 600, marginBottom: 40 }}>Threat Detection & Simulation</p>
+
+        {/* 4-Layer Architecture Display */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 10, width: '100%', marginBottom: 40 }}>
+          {layers.map((layer, i) => (
+            <motion.div
+              key={layer.label}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.3 + i * 0.1 }}
+              className="glass-card"
+              style={{ padding: '16px 12px', textAlign: 'center', cursor: 'default' }}
+            >
+              <layer.icon size={20} color="#D4AF37" style={{ marginBottom: 8 }} />
+              <p style={{ fontSize: '0.65rem', fontWeight: 800, color: '#D4AF37', letterSpacing: '0.15em', marginBottom: 2 }}>{layer.label}</p>
+              <p style={{ fontSize: '0.6rem', color: '#555', fontWeight: 500 }}>{layer.desc}</p>
+            </motion.div>
+          ))}
         </div>
 
-        <div className="w-full glass p-8 md:p-12 shadow-2xl">
-          <form onSubmit={handleSubmit} className="space-y-8">
-            <div className="space-y-3">
-              <label className="text-xs uppercase tracking-widest text-accent font-bold block ml-1">Access Identity</label>
-              <div className="relative">
-                <User className="absolute left-4 top-half translate-y-half text-text-secondary" size={18} />
+        {/* Login Card */}
+        <div className="glass-card" style={{ width: '100%', padding: '40px 36px' }}>
+          <form onSubmit={handleSubmit}>
+            <div style={{ marginBottom: 28 }}>
+              <label style={{ display: 'block', fontSize: '0.65rem', fontWeight: 800, color: '#D4AF37', letterSpacing: '0.2em', textTransform: 'uppercase', marginBottom: 10, marginLeft: 4 }}>Operator Identity</label>
+              <div style={{ position: 'relative' }}>
+                <User size={18} color="#555" style={{ position: 'absolute', left: 18, top: '50%', transform: 'translateY(-50%)' }} />
                 <input
-                  type="email"
-                  required
-                  value={email}
+                  type="email" required value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="input-field"
+                  className="nexus-input"
                   placeholder="admin@nexus.ai"
                 />
               </div>
             </div>
 
-            <div className="space-y-3">
-              <label className="text-xs uppercase tracking-widest text-accent font-bold block ml-1">Security Token</label>
-              <div className="relative">
-                <Lock className="absolute left-4 top-half translate-y-half text-text-secondary" size={18} />
+            <div style={{ marginBottom: 32 }}>
+              <label style={{ display: 'block', fontSize: '0.65rem', fontWeight: 800, color: '#D4AF37', letterSpacing: '0.2em', textTransform: 'uppercase', marginBottom: 10, marginLeft: 4 }}>Encrypted Token</label>
+              <div style={{ position: 'relative' }}>
+                <Lock size={18} color="#555" style={{ position: 'absolute', left: 18, top: '50%', transform: 'translateY(-50%)' }} />
                 <input
-                  type="password"
-                  required
-                  value={password}
+                  type="password" required value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="input-field"
+                  className="nexus-input"
                   placeholder="••••••••"
                 />
               </div>
             </div>
 
-            <motion.button 
+            <motion.button
               whileHover={{ scale: 1.01 }}
-              whileTap={{ scale: 0.99 }}
-              type="submit" 
-              className="primary-button mt-4"
+              whileTap={{ scale: 0.98 }}
+              type="submit"
+              className="btn-gold"
+              style={{ width: '100%' }}
             >
-              {isLogin ? 'Establish Link' : 'Register Core'}
+              Access Command Center
             </motion.button>
           </form>
+        </div>
 
-          <div className="mt-8 text-center">
-            <button 
-              onClick={() => setIsLogin(!isLogin)}
-              className="text-xs tracking-widest uppercase text-text-secondary hover:text-accent transition-colors bg-transparent border-none cursor-pointer underline-offset-4 hover:underline"
-            >
-              Request Access Hierarchy Override
-            </button>
-          </div>
+        {/* Footer info */}
+        <div style={{ marginTop: 32, display: 'flex', alignItems: 'center', gap: 16 }}>
+          <div style={{ height: 1, width: 40, background: 'rgba(212,175,55,0.15)' }} />
+          <span style={{ fontSize: '0.6rem', color: '#444', letterSpacing: '0.3em', textTransform: 'uppercase', fontWeight: 600 }}>Secured by 4-Layer Neural Architecture</span>
+          <div style={{ height: 1, width: 40, background: 'rgba(212,175,55,0.15)' }} />
         </div>
       </motion.div>
     </div>
   );
-};
-
-export default Auth;
+}

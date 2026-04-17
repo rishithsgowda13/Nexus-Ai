@@ -1,75 +1,64 @@
 "use client";
-import React from 'react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, BarChart, Bar, XAxis } from 'recharts';
 
-const data = [
-  { name: 'Genuine', value: 128, color: '#D4AF37' },
-  { name: 'False Positive', value: 354, color: '#444444' },
-];
+const tooltipStyle = {
+  backgroundColor: '#0a0a0a',
+  border: '1px solid rgba(212,175,55,0.2)',
+  borderRadius: 8,
+  fontSize: '0.7rem',
+  padding: '8px 12px',
+};
 
 const barData = [
-  { name: 'MON', genuine: 12, fp: 34 },
-  { name: 'TUE', genuine: 19, fp: 28 },
-  { name: 'WED', genuine: 32, fp: 45 },
-  { name: 'THU', genuine: 25, fp: 39 },
-  { name: 'FRI', genuine: 40, fp: 50 },
+  { name: 'Mon', genuine: 12, fp: 34 },
+  { name: 'Tue', genuine: 19, fp: 28 },
+  { name: 'Wed', genuine: 32, fp: 45 },
+  { name: 'Thu', genuine: 25, fp: 39 },
+  { name: 'Fri', genuine: 40, fp: 50 },
 ];
 
-const ThreatStats = () => {
+export default function ThreatStats({ stats }) {
+  const genuine = stats?.genuine_threats || 0;
+  const fp = stats?.false_positives || 0;
+
+  const pieData = [
+    { name: 'Genuine', value: genuine || 1, color: '#D4AF37' },
+    { name: 'False Positive', value: fp || 1, color: '#222' },
+  ];
+
   return (
-    <div className="flex flex-col h-full gap-10">
-      <div className="h-1/2 min-h-[220px]">
-        <p className="text-[10px] text-accent mb-6 uppercase tracking-[0.2em] font-bold">Signal Distribution</p>
-        <ResponsiveContainer width="100%" height="90%">
+    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 32 }}>
+      <div style={{ flex: 1, minHeight: 200 }}>
+        <p style={{ fontSize: '0.6rem', fontWeight: 800, color: '#D4AF37', letterSpacing: '0.2em', textTransform: 'uppercase', marginBottom: 16 }}>Signal Distribution</p>
+        <ResponsiveContainer width="100%" height={200}>
           <PieChart>
-            <Pie
-              data={data}
-              cx="50%"
-              cy="50%"
-              innerRadius={70}
-              outerRadius={90}
-              paddingAngle={10}
-              dataKey="value"
-              stroke="#000"
-              strokeWidth={2}
-            >
-              {data.map((entry, index) => (
-                <Cell key={`cell-${index}`} fill={entry.color} />
-              ))}
+            <Pie data={pieData} cx="50%" cy="50%" innerRadius={65} outerRadius={85} paddingAngle={8} dataKey="value" stroke="none">
+              {pieData.map((e, i) => <Cell key={i} fill={e.color} />)}
             </Pie>
-            <Tooltip 
-              contentStyle={{ backgroundColor: '#000', border: '1px solid #D4AF37', borderRadius: '0px' }}
-              itemStyle={{ color: '#D4AF37', fontSize: '10px', textTransform: 'uppercase' }}
-            />
+            <Tooltip contentStyle={tooltipStyle} itemStyle={{ color: '#D4AF37' }} />
           </PieChart>
         </ResponsiveContainer>
-        <div className="flex justify-center gap-8 mt-4">
-          {data.map(item => (
-            <div key={item.name} className="flex items-center gap-3">
-              <div className="w-2 h-2 border border-accent" style={{ backgroundColor: item.color }}></div>
-              <span className="text-[9px] text-text-secondary uppercase tracking-widest font-semibold">{item.name}</span>
+        <div style={{ display: 'flex', justifyContent: 'center', gap: 24, marginTop: 8 }}>
+          {pieData.map(d => (
+            <div key={d.name} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <div style={{ width: 8, height: 8, borderRadius: 2, background: d.color }} />
+              <span style={{ fontSize: '0.6rem', color: '#666', fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase' }}>{d.name}: {d.name === 'Genuine' ? genuine : fp}</span>
             </div>
           ))}
         </div>
       </div>
 
-      <div className="h-1/2 min-h-[220px] pt-8">
-        <p className="text-[10px] text-accent mb-6 uppercase tracking-[0.2em] font-bold">Weekly Performance Metric</p>
-        <ResponsiveContainer width="100%" height="80%">
-          <BarChart data={barData}>
-            <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 9, fill: '#D4AF37', letterSpacing: 1 }} />
-            <Tooltip 
-              cursor={{ fill: 'rgba(212, 175, 55, 0.05)' }}
-              contentStyle={{ backgroundColor: '#000', border: '1px solid #D4AF37', borderRadius: '0px' }}
-              itemStyle={{ fontSize: '10px' }}
-            />
-            <Bar dataKey="genuine" stackId="a" fill="#D4AF37" />
-            <Bar dataKey="fp" stackId="a" fill="rgba(212, 175, 55, 0.1)" stroke="#D4AF37" strokeWidth={0.5} />
+      <div style={{ flex: 1, minHeight: 200 }}>
+        <p style={{ fontSize: '0.6rem', fontWeight: 800, color: '#D4AF37', letterSpacing: '0.2em', textTransform: 'uppercase', marginBottom: 16 }}>Weekly Trend</p>
+        <ResponsiveContainer width="100%" height={180}>
+          <BarChart data={barData} barGap={2}>
+            <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#555', fontWeight: 600 }} />
+            <Tooltip contentStyle={tooltipStyle} cursor={{ fill: 'rgba(212,175,55,0.04)' }} />
+            <Bar dataKey="genuine" stackId="a" fill="#D4AF37" radius={[4, 4, 0, 0]} />
+            <Bar dataKey="fp" stackId="a" fill="rgba(212,175,55,0.12)" radius={[4, 4, 0, 0]} />
           </BarChart>
         </ResponsiveContainer>
       </div>
     </div>
   );
-};
-
-export default ThreatStats;
+}

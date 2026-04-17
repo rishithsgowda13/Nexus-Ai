@@ -1,7 +1,10 @@
 "use client";
-import React, { useState } from 'react';
-import Auth from '../components/Auth';
-import Dashboard from '../components/Dashboard';
+import dynamic from 'next/dynamic';
+import { useState } from 'react';
+
+// Disable SSR to prevent hydration mismatches from browser extensions
+const Auth = dynamic(() => import('../components/Auth'), { ssr: false });
+const Dashboard = dynamic(() => import('../components/Dashboard'), { ssr: false });
 
 export default function Home() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);

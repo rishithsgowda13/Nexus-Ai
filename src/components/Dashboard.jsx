@@ -1,159 +1,180 @@
 "use client";
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { 
-  Shield, AlertTriangle, Activity, MessageSquare, 
-  Settings, LogOut, Search, Bell, Radio, Zap, CheckCircle, XCircle
+  Shield, AlertTriangle, Activity, MessageSquare, Settings, LogOut, 
+  Search, Bell, Zap, CheckCircle, XCircle, Layers, Play, RefreshCw
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import ThreatFeed from './ThreatFeed';
 import AIChat from './AIChat';
 import ThreatStats from './ThreatStats';
 
-const Dashboard = ({ user, onLogout }) => {
+const API = "http://localhost:8000";
+
+const menuItems = [
+  { id: 'overview', icon: Activity, label: 'Overview' },
+  { id: 'threats', icon: Shield, label: 'Intelligence' },
+  { id: 'nexus-ai', icon: MessageSquare, label: 'Nexus AI' },
+  { id: 'settings', icon: Settings, label: 'Settings' },
+];
+
+export default function Dashboard({ user, onLogout }) {
   const [activeTab, setActiveTab] = useState('overview');
-  const [displayText, setDisplayText] = useState('');
-  const fullText = "SECURE TELEMETRY INTERFACE";
+  const [time, setTime] = useState('');
+  const [health, setHealth] = useState(null);
+  const [stats, setStats] = useState(null);
+  const [threats, setThreats] = useState([]);
+  const [simulating, setSimulating] = useState(false);
 
   useEffect(() => {
-    let i = 0;
-    const timer = setInterval(() => {
-      setDisplayText(fullText.slice(0, i));
-      i++;
-      if (i > fullText.length) clearInterval(timer);
-    }, 50);
-    return () => clearInterval(timer);
-  }, [activeTab]);
+    const tick = () => setTime(new Date().toLocaleTimeString('en-US', { hour12: false }));
+    tick();
+    const id = setInterval(tick, 1000);
+    return () => clearInterval(id);
+  }, []);
 
-  const menuItems = [
-    { id: 'overview', icon: Activity, label: 'OVERVIEW' },
-    { id: 'threats', icon: Shield, label: 'INTELLIGENCE' },
-    { id: 'nexus-ai', icon: MessageSquare, label: 'NEXUS AI' },
-    { id: 'settings', icon: Settings, label: 'SETTINGS' },
+  // Fetch health + stats on mount
+  useEffect(() => {
+    fetchHealth();
+    fetchStats();
+    fetchThreats();
+  }, []);
+
+  const fetchHealth = async () => {
+    try {
+      const res = await fetch(`${API}/api/health`);
+      setHealth(await res.json());
+    } catch { setHealth(null); }
+  };
+
+  const fetchStats = async () => {
+    try {
+      const res = await fetch(`${API}/api/stats`);
+      setStats(await res.json());
+    } catch { setStats(null); }
+  };
+
+  const fetchThreats = async () => {
+    try {
+      const res = await fetch(`${API}/api/threats`);
+      const data = await res.json();
+      setThreats(data.threats || []);
+    } catch { setThreats([]); }
+  };
+
+  const runSimulation = async () => {
+    setSimulating(true);
+    try {
+      await fetch(`${API}/api/simulate`, { method: 'POST' });
+      await fetchStats();
+      await fetchThreats();
+    } catch (e) { console.error(e); }
+    setSimulating(false);
+  };
+
+  const layers = health?.layers || {};
+  const layerList = [
+    { key: "L1_Ingestion", label: "L1 Ingest" },
+    { key: "L2_Detection", label: "L2 Detect" },
+    { key: "L3_Correlation", label: "L3 Correlate" },
+    { key: "L4_Output", label: "L4 Output" },
   ];
 
   return (
-    <div className="flex h-screen overflow-hidden text-white bg-black">
-      {/* Sidebar */}
-      <aside className="w-72 border-r border-white-5 flex flex-col pt-10">
-        <div className="flex flex-col items-center mb-16">
-          <div className="w-14 h-14 border border-accent flex items-center justify-center rounded-xl mb-4 bg-black shadow-gold group">
-            <Shield className="text-accent group-hover:scale-110 transition-transform" size={28} />
+    <div className="scanline" style={{ display: 'flex', height: '100vh', overflow: 'hidden', color: '#fff', background: '#000' }}>
+      
+      {/* SIDEBAR */}
+      <aside style={{ width: 280, borderRight: '1px solid rgba(255,255,255,0.04)', display: 'flex', flexDirection: 'column', background: 'rgba(0,0,0,0.6)' }}>
+        <div style={{ padding: '32px 24px 40px', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+          <div className="glow-border-animation" style={{ width: 52, height: 52, border: '1.5px solid rgba(212,175,55,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: 14, marginBottom: 14, background: '#000' }}>
+            <Shield size={26} color="#D4AF37" />
           </div>
-          <span className="brand-font text-xl tracking-widest text-accent uppercase animate-fade-in">Nexus Registry</span>
+          <span style={{ fontFamily: 'Montserrat, sans-serif', fontWeight: 900, fontSize: '1.1rem', color: '#D4AF37', letterSpacing: '0.2em' }}>NEXUS.AI</span>
+          <span style={{ fontSize: '0.55rem', color: '#444', letterSpacing: '0.3em', marginTop: 4, textTransform: 'uppercase' }}>Command Center</span>
         </div>
 
-        <nav className="flex-1 px-4 space-y-1">
+        <nav style={{ flex: 1, padding: '0 16px', display: 'flex', flexDirection: 'column', gap: 4 }}>
           {menuItems.map((item) => (
-            <button
-              key={item.id}
-              onClick={() => setActiveTab(item.id)}
-              className={`tab-button ${activeTab === item.id ? 'active' : ''}`}
-            >
-              <div className={`p-2 rounded-lg ${activeTab === item.id ? 'bg-accent-10' : 'bg-white-5'}`}>
-                <item.icon size={18} />
-              </div>
-              <span className="tracking-widest uppercase text-xs font-black">{item.label}</span>
+            <button key={item.id} onClick={() => setActiveTab(item.id)} className={`sidebar-tab ${activeTab === item.id ? 'active' : ''}`}>
+              <div className="tab-icon"><item.icon size={16} /></div>
+              <span style={{ letterSpacing: '0.12em', textTransform: 'uppercase', fontSize: '0.72rem', fontWeight: 700 }}>{item.label}</span>
             </button>
           ))}
         </nav>
 
-        <div className="p-6 border-t border-white-5 bg-black-40">
-          <div className="p-4 glass mb-4 flex items-center gap-4 hover:border-accent-20 transition-all">
-            <div className="w-10 h-10 rounded-lg bg-accent-10 flex items-center justify-center font-bold text-accent border border-accent-20">
-              {user?.name?.[0].toUpperCase() || 'A'}
+        {/* Live Layer Status from API */}
+        <div style={{ padding: '16px 20px', borderTop: '1px solid rgba(255,255,255,0.04)' }}>
+          <p style={{ fontSize: '0.6rem', color: '#555', letterSpacing: '0.2em', textTransform: 'uppercase', fontWeight: 700, marginBottom: 12 }}>Core Layers (Live)</p>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+            {layerList.map(l => {
+              const status = layers[l.key] || 'offline';
+              const color = status === 'active' ? '#00ff88' : '#ef4444';
+              return (
+                <div key={l.key} style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                  <div className="layer-dot" style={{ background: color, boxShadow: `0 0 6px ${color}` }} />
+                  <span style={{ fontSize: '0.62rem', color: '#666', fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase' }}>{l.label}</span>
+                  <span style={{ marginLeft: 'auto', fontSize: '0.55rem', color, fontWeight: 700, textTransform: 'uppercase' }}>{status}</span>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* User */}
+        <div style={{ padding: '20px', borderTop: '1px solid rgba(255,255,255,0.04)' }}>
+          <div className="glass-card" style={{ padding: '14px 16px', display: 'flex', alignItems: 'center', gap: 12, marginBottom: 12, borderRadius: 12 }}>
+            <div style={{ width: 38, height: 38, borderRadius: 10, background: 'rgba(212,175,55,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, color: '#D4AF37', border: '1px solid rgba(212,175,55,0.2)', fontSize: '0.85rem' }}>
+              {user?.name?.[0]?.toUpperCase() || 'A'}
             </div>
-            <div className="overflow-hidden">
-              <p className="text-xs font-black truncate text-accent">{user?.name || 'ADMIN'}</p>
-              <p className="text-xs text-text-secondary uppercase tracking-widest">Operator V3</p>
+            <div style={{ overflow: 'hidden' }}>
+              <p style={{ fontSize: '0.78rem', fontWeight: 800, color: '#D4AF37', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{user?.name || 'Admin'}</p>
+              <p style={{ fontSize: '0.55rem', color: '#555', letterSpacing: '0.15em', textTransform: 'uppercase' }}>SOC Analyst</p>
             </div>
           </div>
-          <button 
-            onClick={onLogout}
-            className="w-full flex items-center justify-center gap-2 py-3 rounded-lg border border-danger-20 text-danger hover:bg-danger/10 transition-all cursor-pointer bg-transparent uppercase text-xs font-black tracking-widest"
-          >
-            <LogOut size={12} />
-            <span>Termination Mode</span>
+          <button onClick={onLogout} style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, padding: '10px', borderRadius: 10, border: '1px solid rgba(239,68,68,0.15)', color: '#ef4444', background: 'transparent', cursor: 'pointer', fontSize: '0.65rem', fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase' }}>
+            <LogOut size={13} /> Disconnect
           </button>
         </div>
       </aside>
 
-      {/* Main Content */}
-      <main className="flex-1 flex flex-col h-full overflow-hidden">
-        <header className="flex items-center justify-between p-6 px-10 border-b border-white-5">
-          <div className="flex items-center gap-3">
-            <div className="w-2 h-2 rounded-full bg-success animate-pulse"></div>
-            <span className="text-xs uppercase tracking-widest font-bold text-text-secondary">System Online: Neural Core v1.5</span>
+      {/* MAIN */}
+      <main style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+        <header style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 32px', borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            <div className="pulse-dot" style={{ width: 6, height: 6 }} />
+            <span style={{ fontSize: '0.65rem', letterSpacing: '0.25em', color: '#555', textTransform: 'uppercase', fontWeight: 600 }}>
+              {health ? 'System Online' : 'Connecting...'}
+            </span>
+            <span style={{ fontSize: '0.65rem', color: '#333', margin: '0 8px' }}>|</span>
+            <span style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: '0.72rem', color: '#D4AF37', fontWeight: 500 }}>{time}</span>
           </div>
-          <div className="flex items-center gap-6">
-             <div className="relative">
-              <Search className="absolute left-3 top-half translate-y-half text-text-secondary" size={14} />
-              <input 
-                type="text" 
-                placeholder="Global telemetry..."
-                className="bg-black-40 border border-white-10 rounded-lg py-2.5 pl-10 pr-4 focus:border-accent transition-all text-xs text-white placeholder-white-20 w-[240px] outline-none"
-              />
-            </div>
-            <button className="relative p-2.5 border border-white-10 rounded-lg hover:border-accent transition-colors bg-transparent cursor-pointer">
-              <Bell size={16} className="text-text-secondary" />
-              <span className="absolute top-2.5 right-2.5 w-1.5 h-1.5 bg-accent rounded-full shadow-gold"></span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            <button onClick={runSimulation} disabled={simulating} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 16px', borderRadius: 10, border: '1px solid rgba(212,175,55,0.2)', background: simulating ? 'rgba(212,175,55,0.05)' : 'transparent', color: '#D4AF37', cursor: 'pointer', fontSize: '0.65rem', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', transition: 'all 0.3s' }}>
+              {simulating ? <RefreshCw size={13} style={{ animation: 'spin 1s linear infinite' }} /> : <Play size={13} />}
+              {simulating ? 'Processing...' : 'Run Simulation'}
+            </button>
+            <button onClick={() => { fetchStats(); fetchThreats(); }} style={{ padding: '8px', borderRadius: 10, border: '1px solid rgba(255,255,255,0.06)', background: 'transparent', cursor: 'pointer', color: '#666' }}>
+              <RefreshCw size={14} />
+            </button>
+            <button style={{ position: 'relative', padding: 10, border: '1px solid rgba(255,255,255,0.06)', borderRadius: 10, background: 'transparent', cursor: 'pointer' }}>
+              <Bell size={16} color="#666" />
+              {threats.length > 0 && <span style={{ position: 'absolute', top: 6, right: 6, width: 6, height: 6, background: '#D4AF37', borderRadius: '50%' }} />}
             </button>
           </div>
         </header>
 
-        <div className="flex-1 overflow-y-auto p-10 custom-scrollbar">
+        <div style={{ flex: 1, overflowY: 'auto', padding: '32px 36px' }}>
           <AnimatePresence mode="wait">
-            {activeTab === 'overview' && (
-              <motion.div 
-                key="overview"
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -10 }}
-                className="space-y-10"
-              >
-                <div className="flex flex-col items-center mb-16">
-                   <h2 className="text-4xl font-black text-white text-center mb-4 tracking-tighter min-h-[48px]">
-                      {displayText}<span className="animate-pulse">|</span>
-                   </h2>
-                   <div className="flex items-center gap-4">
-                      <div className="h-[1px] w-20 bg-accent-30"></div>
-                      <p className="text-xs text-text-secondary tracking-widest uppercase font-bold text-center">Elite Threat Intelligence & Simulation</p>
-                      <div className="h-[1px] w-20 bg-accent-30"></div>
-                   </div>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                  <StatCard label="Network Wave" value="842.2 TB" trend="+12.4%" icon={Activity} />
-                  <StatCard label="Divergence" value="482" trend="+3.1%" icon={AlertTriangle} />
-                  <StatCard label="Confirmed" value="128" trend="-5.2%" icon={CheckCircle} />
-                  <StatCard label="Discarded" value="354" trend="+8.4%" icon={XCircle} />
-                </div>
-
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                  <div className="lg:col-span-2 glass p-8 min-h-[600px] flex flex-col">
-                    <div className="flex items-center justify-between mb-8 pb-4 border-b border-white-5">
-                      <h3 className="text-xs font-black flex items-center gap-3 tracking-widest text-accent uppercase">
-                        <Zap size={16} className="animate-pulse" /> 
-                        NEURAL THREAT STREAM
-                      </h3>
-                      <div className="flex items-center gap-4">
-                         <span className="text-xs text-success font-black tracking-widest uppercase">Live Polling</span>
-                         <span className="w-2 h-2 bg-success rounded-full animate-ping"></span>
-                      </div>
-                    </div>
-                    <ThreatFeed />
-                  </div>
-
-                  <div className="glass p-8 min-h-[600px] flex flex-col">
-                    <h3 className="text-xs font-black mb-8 pb-4 border-b border-white-5 tracking-widest text-accent uppercase">DATA CLUSTERS</h3>
-                    <ThreatStats />
-                  </div>
-                </div>
+            {activeTab === 'overview' && <OverviewTab key="ov" stats={stats} threats={threats} />}
+            {activeTab === 'threats' && <OverviewTab key="th" stats={stats} threats={threats} />}
+            {activeTab === 'nexus-ai' && (
+              <motion.div key="ai" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} style={{ height: '100%' }}>
+                <AIChat />
               </motion.div>
             )}
-
-            {activeTab === 'nexus-ai' && (
-               <motion.div key="nexus-ai" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="h-full">
-                <AIChat />
+            {activeTab === 'settings' && (
+              <motion.div key="st" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%' }}>
+                <p style={{ fontSize: '0.8rem', color: '#444', letterSpacing: '0.2em', textTransform: 'uppercase' }}>Configuration Module — Coming Soon</p>
               </motion.div>
             )}
           </AnimatePresence>
@@ -161,21 +182,64 @@ const Dashboard = ({ user, onLogout }) => {
       </main>
     </div>
   );
-};
+}
 
-const StatCard = ({ label, value, trend, icon: Icon }) => (
-  <div className="glass p-6 group cursor-pointer hover:border-accent-20 transition-all hover:translate-y-[-2px] hover:shadow-[0_0_20px_rgba(212,175,55,0.05)]">
-    <div className="flex justify-between items-start mb-6">
-      <div className="p-2.5 rounded-xl bg-black border border-white-10 group-hover:border-accent transition-all shadow-lg">
-        <Icon size={18} className="text-accent group-hover:scale-110 transition-transform" />
+function OverviewTab({ stats, threats }) {
+  const statCards = [
+    { label: "Data Throughput", value: stats?.throughput || "—", trend: `${stats?.events_per_sec || 0} evt/s`, icon: Activity, layer: "L1" },
+    { label: "Anomaly Count", value: String(stats?.anomaly_count || 0), trend: "Total", icon: AlertTriangle, layer: "L2" },
+    { label: "Verified Threats", value: String(stats?.genuine_threats || 0), trend: "Genuine", icon: CheckCircle, layer: "L3", color: "#ef4444" },
+    { label: "False Positives", value: String(stats?.false_positives || 0), trend: "Filtered", icon: XCircle, layer: "L4", color: "#00ff88" },
+  ];
+
+  return (
+    <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -12 }}>
+      <div style={{ textAlign: 'center', marginBottom: 48 }}>
+        <h1 style={{ fontFamily: 'Montserrat, sans-serif', fontWeight: 900, fontSize: '2.2rem', color: '#fff', letterSpacing: '-0.02em', marginBottom: 8 }}>
+          AI-Driven <span style={{ color: '#00ff88' }}>Threat Detection</span> & Simulation
+        </h1>
+        <p style={{ fontSize: '0.7rem', color: '#555', letterSpacing: '0.4em', textTransform: 'uppercase', fontWeight: 600 }}>4-Layer Neural Architecture • Real-Time Processing</p>
       </div>
-      <span className={`text-xs font-black tracking-widest ${trend.startsWith('+') ? 'text-success' : 'text-danger'}`}>
-        {trend}
-      </span>
-    </div>
-    <p className="text-text-secondary text-xs font-black tracking-widest uppercase mb-1">{label}</p>
-    <p className="text-2xl font-black text-white group-hover:text-accent transition-colors">{value}</p>
-  </div>
-);
 
-export default Dashboard;
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16, marginBottom: 32 }}>
+        {statCards.map((s, i) => (
+          <motion.div key={s.label} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 + i * 0.08 }} className="glass-card stat-card" style={{ padding: 24 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 20 }}>
+              <div style={{ width: 40, height: 40, borderRadius: 12, background: 'rgba(212,175,55,0.06)', border: '1px solid rgba(212,175,55,0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <s.icon size={18} color="#D4AF37" />
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 4 }}>
+                <span style={{ fontSize: '0.6rem', fontWeight: 700, color: s.color || '#D4AF37', letterSpacing: '0.05em' }}>{s.trend}</span>
+                <span style={{ fontSize: '0.5rem', color: '#444', fontWeight: 600, letterSpacing: '0.15em', textTransform: 'uppercase' }}>{s.layer}</span>
+              </div>
+            </div>
+            <p style={{ fontSize: '0.6rem', fontWeight: 700, color: '#555', letterSpacing: '0.15em', textTransform: 'uppercase', marginBottom: 4 }}>{s.label}</p>
+            <p style={{ fontSize: '1.6rem', fontWeight: 900, color: '#fff' }}>{s.value}</p>
+          </motion.div>
+        ))}
+      </div>
+
+      <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 20 }}>
+        <div className="glass-card" style={{ padding: 28, display: 'flex', flexDirection: 'column', minHeight: 500 }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24, paddingBottom: 16, borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              <Zap size={16} color="#D4AF37" />
+              <span style={{ fontSize: '0.7rem', fontWeight: 800, color: '#D4AF37', letterSpacing: '0.15em', textTransform: 'uppercase' }}>Neural Threat Stream</span>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <span style={{ fontSize: '0.6rem', fontWeight: 700, color: '#00ff88', letterSpacing: '0.1em', textTransform: 'uppercase' }}>Live</span>
+              <div style={{ width: 6, height: 6, borderRadius: '50%', background: '#00ff88', boxShadow: '0 0 8px #00ff88' }} />
+            </div>
+          </div>
+          <ThreatFeed threats={threats} />
+        </div>
+        <div className="glass-card" style={{ padding: 28, display: 'flex', flexDirection: 'column', minHeight: 500 }}>
+          <div style={{ marginBottom: 24, paddingBottom: 16, borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
+            <span style={{ fontSize: '0.7rem', fontWeight: 800, color: '#D4AF37', letterSpacing: '0.15em', textTransform: 'uppercase' }}>ML Analytics</span>
+          </div>
+          <ThreatStats stats={stats} />
+        </div>
+      </div>
+    </motion.div>
+  );
+}

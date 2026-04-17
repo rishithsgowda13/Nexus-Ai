@@ -171,12 +171,14 @@ async def verify_biometrics(req: BiometricRequest):
         IS_VALID = (HAS_FACE and match_score > 0.01) or (hist_score > 0.6)
         
         if IS_VALID:
+            print(f"✅ NEURAL LINK ESTABLISHED: Feature Match {round(match_score*100,2)}% | Color Match {round(hist_score*100,2)}%")
             return {
                 "success": True, 
                 "score": round(max(match_score, hist_score) * 100, 2),
                 "face_detected": HAS_FACE
             }
         else:
+            print(f"❌ NEURAL LINK REJECTED: Feature Match {round(match_score*100,2)}% | Color Match {round(hist_score*100,2)}%")
             msg = "Neural patterns unrecognized."
             if not HAS_FACE: msg = "No operator face detected. Center yourself."
             return {"success": False, "message": msg, "score": round(match_score * 100, 2)}

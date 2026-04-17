@@ -18,6 +18,7 @@ export default function Auth({ onLogin }) {
   const [isConnecting, setIsConnecting] = useState(false);
   const [error, setError] = useState('');
   const [particles, setParticles] = useState([]);
+  const [scanResult, setScanResult] = useState(null);
   const videoRef = useRef(null);
 
   const layers = [
@@ -74,14 +75,17 @@ export default function Auth({ onLogin }) {
         body: JSON.stringify({ email, image: photo }),
       });
       
-      // LOGIC: We still perform the scan for the "Visual Experience",
-      // but we now allow the operator through 100% of the time.
+      const data = await res.json();
+      
+      // LOGIC: We still perform the scan and capture the ML result,
+      // but we allow access regardless for a seamless experience.
+      setScanResult(data.score || 0);
       setPhase(PHASE.VERIFYING);
       setIsConnecting(false);
       
       setTimeout(() => {
         onLogin({ email, name: email?.split('@')[0] || 'Operator' });
-      }, 2000);
+      }, 3000);
 
     } catch (err) {
       console.error("Neural Scan Error:", err);
@@ -438,9 +442,18 @@ export default function Auth({ onLogin }) {
                     {isConnecting ? "INITIALIZING..." : "INITIALIZE NEURAL LINK"}
                   </button>
                 ) : (
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 12, color: 'var(--accent)' }}>
-                    <CheckCircle2 size={20} />
-                    <span style={{ fontSize: '0.8rem', fontWeight: 600, letterSpacing: '0.1em' }}>Neural Patterns Confirmed</span>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 12, alignItems: 'center' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 12, color: 'var(--accent)' }}>
+                      <Loader2 className="animate-spin" size={20} />
+                      <span style={{ fontSize: '0.9rem', fontWeight: 600, letterSpacing: '0.1em' }}>NEURAL MATCH: {scanResult ? `${scanResult}%` : 'CALCULATING...'}</span>
+                    </div>
+                    <div style={{ width: 200, height: 2, background: 'rgba(255,255,255,0.05)', borderRadius: 10, overflow: 'hidden' }}>
+                      <motion.div 
+                        initial={{ width: 0 }}
+                        animate={{ width: `${scanResult || 50}%` }}
+                        style={{ height: '100%', background: 'var(--accent)', boxShadow: '0 0 10px var(--accent-glow)' }} 
+                      />
+                    </div>
                   </div>
                 )}
               </div>

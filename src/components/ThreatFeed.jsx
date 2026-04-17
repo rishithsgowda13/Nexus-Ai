@@ -8,10 +8,22 @@ export default function ThreatFeed({ threats = [] }) {
 
   if (threats.length === 0) {
     return (
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 16 }}>
-        <ShieldCheck size={40} color="#333" />
-        <p style={{ fontSize: '0.8rem', color: '#444', fontWeight: 600 }}>No threats detected yet</p>
-        <p style={{ fontSize: '0.65rem', color: '#333' }}>Click <strong>"Run Simulation"</strong> to process sample logs through the 4-layer pipeline</p>
+      <div style={{
+        flex: 1, display: 'flex', flexDirection: 'column',
+        alignItems: 'center', justifyContent: 'center', gap: 16,
+      }}>
+        <div style={{
+          width: 60, height: 60, borderRadius: 16,
+          background: 'rgba(255,255,255,0.02)',
+          border: '1px solid rgba(255,255,255,0.04)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+        }}>
+          <ShieldCheck size={28} color="rgba(255,255,255,0.15)" />
+        </div>
+        <p style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.3)', fontWeight: 500 }}>No threats detected yet</p>
+        <p style={{ fontSize: '0.62rem', color: 'rgba(255,255,255,0.15)', textAlign: 'center', lineHeight: 1.6 }}>
+          Click <strong style={{ color: '#00d4ff' }}>"Simulate"</strong> to process sample logs through the 4-layer pipeline
+        </p>
       </div>
     );
   }
@@ -33,29 +45,48 @@ export default function ThreatFeed({ threats = [] }) {
             style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}
           >
             <div style={{ display: 'flex', alignItems: 'center', gap: 18 }}>
-              <div style={{ width: 44, height: 44, borderRadius: 12, display: 'flex', alignItems: 'center', justifyContent: 'center', background: isGenuine ? 'rgba(239,68,68,0.08)' : 'rgba(0,255,136,0.06)' }}>
-                {isGenuine ? <ShieldAlert size={20} color="#ef4444" /> : <ShieldCheck size={20} color="#00ff88" />}
+              <div style={{
+                width: 44, height: 44, borderRadius: 12,
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                background: isGenuine ? 'rgba(255,59,92,0.05)' : 'rgba(0,255,136,0.03)',
+                border: `1px solid ${isGenuine ? 'rgba(255,59,92,0.1)' : 'rgba(0,255,136,0.08)'}`,
+              }}>
+                {isGenuine ? <ShieldAlert size={20} color="#ff3b5c" /> : <ShieldCheck size={20} color="#00ff88" />}
               </div>
               <div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4, flexWrap: 'wrap' }}>
-                  <span style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: '0.6rem', color: '#555', letterSpacing: '0.1em' }}>{t.id}</span>
+                  <span style={{
+                    fontFamily: 'JetBrains Mono, monospace',
+                    fontSize: '0.58rem', color: 'rgba(255,255,255,0.25)', letterSpacing: '0.1em',
+                  }}>{t.id}</span>
                   <span className={`badge ${sevClass[sev] || 'badge-info'}`}>{sev}</span>
-                  <span style={{ fontSize: '0.58rem', fontWeight: 700, color: '#D4AF37', background: 'rgba(212,175,55,0.08)', padding: '2px 8px', borderRadius: 4 }}>
+                  <span style={{
+                    fontSize: '0.55rem', fontWeight: 600, color: '#00d4ff',
+                    background: 'rgba(0,212,255,0.05)','padding': '2px 8px', borderRadius: 4,
+                    border: '1px solid rgba(0,212,255,0.08)',
+                  }}>
                     ML {alert.confidence_score || 0}%
                   </span>
-                  <span style={{ fontSize: '0.52rem', color: '#555', background: 'rgba(255,255,255,0.03)', padding: '2px 6px', borderRadius: 4 }}>
+                  <span style={{
+                    fontSize: '0.5rem', color: 'rgba(255,255,255,0.25)',
+                    background: 'rgba(255,255,255,0.02)',
+                    padding: '2px 6px', borderRadius: 4,
+                    border: '1px solid rgba(255,255,255,0.04)',
+                  }}>
                     {t.raw_source?.toUpperCase()}
                   </span>
                 </div>
-                <p style={{ fontSize: '0.92rem', fontWeight: 700, color: '#fff', marginBottom: 4 }}>{alert.threat_type || 'Unknown'}</p>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 12, fontSize: '0.68rem', color: '#555' }}>
-                  <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}><Clock size={12} color="#D4AF37" /> {t.timestamp}</span>
-                  <span style={{ width: 3, height: 3, borderRadius: '50%', background: '#333' }} />
+                <p style={{ fontSize: '0.88rem', fontWeight: 700, color: '#fff', marginBottom: 4 }}>{alert.threat_type || 'Unknown'}</p>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12, fontSize: '0.65rem', color: 'rgba(255,255,255,0.3)' }}>
+                  <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}><Clock size={12} color="#00d4ff" /> {t.timestamp}</span>
+                  <span style={{ width: 3, height: 3, borderRadius: '50%', background: 'rgba(255,255,255,0.1)' }} />
                   <span>{alert.source || 'N/A'}</span>
                   {alert.cross_layer_match && (
                     <>
-                      <span style={{ width: 3, height: 3, borderRadius: '50%', background: '#333' }} />
-                      <span style={{ color: '#D4AF37', display: 'flex', alignItems: 'center', gap: 4 }}><Layers size={11} /> {alert.cross_layer_match}</span>
+                      <span style={{ width: 3, height: 3, borderRadius: '50%', background: 'rgba(255,255,255,0.1)' }} />
+                      <span style={{
+                        color: '#a855f7', display: 'flex', alignItems: 'center', gap: 4,
+                      }}><Layers size={11} /> {alert.cross_layer_match}</span>
                     </>
                   )}
                 </div>
@@ -67,7 +98,10 @@ export default function ThreatFeed({ threats = [] }) {
                 {alert.status}
               </span>
               {t.playbook && (
-                <span style={{ fontSize: '0.5rem', color: '#D4AF37', fontWeight: 600, letterSpacing: '0.1em' }}>
+                <span style={{
+                  fontSize: '0.48rem', color: '#00d4ff', fontWeight: 500,
+                  letterSpacing: '0.1em', fontFamily: 'JetBrains Mono, monospace',
+                }}>
                   {t.playbook.length} STEPS
                 </span>
               )}

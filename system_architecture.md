@@ -1,5 +1,5 @@
 # Nexus AI: Threat Detection & Simulation Engine
-### Team: Nexus
+### Team: [Insert Your Team Details]
 ### Hackathon: Hack Malenadu '26 | Cybersecurity Track
 
 ---
@@ -19,9 +19,9 @@ Organizations face advanced cyber threats that traditional, rule-based systems s
 ```mermaid
 graph TD
     subgraph Signal Ingestion Layer
-        A1["Network Logs Simulated PCAP"] --> B["Log Normalizer & Unified Event Bus"]
-        A2["Endpoint Logs Simulated Sysmon"] --> B
-        A3["Application Logs Simulated Web/API"] --> B
+        A1["Network Logs\nSimulated PCAP"] --> B["Log Normalizer & Unified Event Bus"]
+        A2["Endpoint Logs\nSimulated Sysmon"] --> B
+        A3["Application Logs\nSimulated Web/API"] --> B
     end
 
     subgraph AI Detection Core

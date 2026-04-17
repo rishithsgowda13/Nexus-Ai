@@ -1,5 +1,5 @@
 # Nexus AI: Threat Detection & Simulation Engine
-### Team: [Insert Your Team Details]
+### Team: Tech Nexus
 ### Hackathon: Hack Malenadu '26 | Cybersecurity Track
 
 ---

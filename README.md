@@ -1,4 +1,7 @@
-# <p align="center"><img src="public/logo.png" width="200" alt="NEXUS.AI Logo"><br>NEXUS.AI</p>
+<div align="center">
+  <img src="public/icon.png" width="160" alt="Nexus AI Logo" />
+  <h1>NEXUS.AI: NEURAL COMMAND CENTER</h1>
+</div>
 
 <p align="center">
   <img src="https://img.shields.io/badge/Next.js-000000?style=for-the-badge&logo=nextdotjs&logoColor=white" alt="Next.js">

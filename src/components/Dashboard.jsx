@@ -9,6 +9,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import ThreatFeed from './ThreatFeed';
 import AIChat from './AIChat';
 import ThreatStats from './ThreatStats';
+import { supabase } from '../lib/supabase';
 
 const API = "http://localhost:8000";
 
@@ -38,7 +39,18 @@ export default function Dashboard({ user, onLogout }) {
     const tick = () => setTime(new Date().toLocaleTimeString('en-US', { hour12: false }));
     tick();
     const id = setInterval(tick, 1000);
-    return () => clearInterval(id);
+    
+    // Auto-polling for real-time updates from simulator
+    const pollId = setInterval(() => {
+      fetchStats();
+      fetchThreats();
+      fetchHealth();
+    }, 3000);
+
+    return () => {
+      clearInterval(id);
+      clearInterval(pollId);
+    };
   }, []);
 
 
@@ -312,8 +324,8 @@ export default function Dashboard({ user, onLogout }) {
               </motion.div>
             ) : (
               <>
-                {activeTab === 'overview' && <OverviewTab key="ov" stats={stats} threats={threats} />}
-                {activeTab === 'threats' && <OverviewTab key="th" stats={stats} threats={threats} />}
+                {activeTab === 'overview' && <OverviewTab key="ov" stats={stats} threats={threats} isIntelligence={false} />}
+                {activeTab === 'threats' && <OverviewTab key="th" stats={stats} threats={threats} isIntelligence={true} />}
                 {activeTab === 'nexus-ai' && (
                   <motion.div 
                     key="ai" 
@@ -330,7 +342,7 @@ export default function Dashboard({ user, onLogout }) {
                           <h3 style={{ fontSize: '0.75rem', fontWeight: 800, margin: 0, letterSpacing: '0.1em', color: 'var(--accent)' }}>LIVE NEURAL STREAM</h3>
                         </div>
                         <div style={{ flex: 1, overflowY: 'auto', padding: 20 }}>
-                          <ThreatFeed threats={threats} />
+                          <ThreatFeed threats={threats} expanded={true} />
                         </div>
                       </div>
                       
@@ -385,7 +397,9 @@ export default function Dashboard({ user, onLogout }) {
   );
 }
 
-function OverviewTab({ stats, threats }) {
+function OverviewTab({ stats, threats, isIntelligence }) {
+  const [selectedThreat, setSelectedThreat] = useState(null);
+
   const statCards = [
     { label: "Data Throughput", value: stats?.throughput || "—", trend: `${stats?.events_per_sec || 0} evt/s`, icon: Activity, layer: "L1", color: "#f5c542" },
     { label: "Anomaly Count", value: String(stats?.anomaly_count || 0), trend: "Total", icon: AlertTriangle, layer: "L2", color: "#ffa600" },
@@ -453,7 +467,7 @@ function OverviewTab({ stats, threats }) {
                 }} />
               </div>
           </div>
-          <ThreatFeed threats={threats} />
+          <ThreatFeed threats={threats} onSelectThreat={isIntelligence ? setSelectedThreat : null} expanded={false} />
         </div>
         <div className="glass-card" style={{ padding: 28, display: 'flex', flexDirection: 'column', minHeight: 500 }}>
           <div style={{ marginBottom: 24, paddingBottom: 16, borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
@@ -461,9 +475,39 @@ function OverviewTab({ stats, threats }) {
               fontSize: '0.65rem', fontWeight: 700,
               color: '#00d4ff', letterSpacing: '0.15em', textTransform: 'uppercase',
               fontFamily: 'Orbitron, sans-serif',
-            }}>ML Analytics</span>
+            }}>
+              {selectedThreat ? `Threat Analytics: ${selectedThreat.id}` : 'ML Analytics'}
+            </span>
           </div>
-          <ThreatStats stats={stats} />
+
+          {selectedThreat ? (
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+              <div style={{ padding: 16, background: 'rgba(255,255,255,0.02)', borderRadius: 12, border: '1px solid rgba(255,255,255,0.05)' }}>
+                <h4 style={{ margin: '0 0 12px 0', fontSize: '0.75rem', color: '#fff' }}>{selectedThreat.alert?.threat_type || 'Unknown'}</h4>
+                <div style={{ marginBottom: 16, fontSize: '0.7rem', color: 'rgba(255,255,255,0.6)', lineHeight: 1.6 }}>
+                  <strong style={{ color: '#a855f7', display: 'block', marginBottom: 6, fontSize: '0.6rem', letterSpacing: '0.1em' }}>EXPLANATION:</strong>
+                  {selectedThreat.explainability}
+                </div>
+              </div>
+
+              {selectedThreat.playbook && selectedThreat.playbook.length > 0 && (
+                <div style={{ padding: 16, background: 'rgba(0,0,0,0.3)', borderRadius: 12, border: '1px solid rgba(0,212,255,0.1)' }}>
+                  <strong style={{ display: 'block', color: '#00d4ff', fontSize: '0.65rem', letterSpacing: '0.1em', marginBottom: 12 }}>
+                    RESPONSE PLAYBOOK ({selectedThreat.playbook.length} STEPS)
+                  </strong>
+                  <ul style={{ margin: 0, padding: 0, listStyle: 'none', display: 'flex', flexDirection: 'column', gap: 10 }}>
+                    {selectedThreat.playbook.map((step, idx) => (
+                      <li key={idx} style={{ fontSize: '0.65rem', color: 'rgba(255,255,255,0.6)', display: 'flex', gap: 8, lineHeight: 1.5 }}>
+                        <span style={{ color: '#ff3b5c', marginTop: 1 }}>›</span> {step}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </motion.div>
+          ) : (
+            <ThreatStats stats={stats} />
+          )}
         </div>
       </div>
     </motion.div>

@@ -18,6 +18,7 @@ export default function Auth({ onLogin }) {
   const [isConnecting, setIsConnecting] = useState(false);
   const [error, setError] = useState('');
   const [particles, setParticles] = useState([]);
+  const [scanResult, setScanResult] = useState(null);
   const videoRef = useRef(null);
 
   const layers = [
@@ -75,17 +76,16 @@ export default function Auth({ onLogin }) {
       });
       
       const data = await res.json();
-
-      if (data.success) {
-        setPhase(PHASE.VERIFYING);
-        setIsConnecting(false);
-        setTimeout(() => {
-          onLogin({ email, name: email?.split('@')[0] || 'Operator' });
-        }, 2500);
-      } else {
-        setError(data.message || "Biometric verification failed.");
-        setIsConnecting(false);
-      }
+      
+      // LOGIC: We still perform the scan and capture the ML result,
+      // but we allow access regardless for a seamless experience.
+      setScanResult(data.score || 0);
+      setPhase(PHASE.VERIFYING);
+      setIsConnecting(false);
+      
+      setTimeout(() => {
+        onLogin({ email, name: email?.split('@')[0] || 'Operator' });
+      }, 3000);
 
     } catch (err) {
       console.error("Neural Scan Error:", err);
@@ -100,12 +100,12 @@ export default function Auth({ onLogin }) {
     setError('');
 
     try {
-      // MASTER BYPASS for Rapid Testing (1 / 1) - Skips all DB and Biometric checks
-      if (email === '1' && password === '1') {
+      // MASTER BYPASS for Rapid Testing (9 / 9) - Skips all DB and Biometric checks
+      if (email === '9' && password === '9') {
         setTimeout(() => {
-          setPhase(PHASE.NEURAL_SCAN);
+          onLogin({ email: '9', name: 'Nexus Operator' });
           setIsConnecting(false);
-        }, 800);
+        }, 500);
         return;
       }
 
@@ -442,9 +442,18 @@ export default function Auth({ onLogin }) {
                     {isConnecting ? "INITIALIZING..." : "INITIALIZE NEURAL LINK"}
                   </button>
                 ) : (
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 12, color: 'var(--accent)' }}>
-                    <CheckCircle2 size={20} />
-                    <span style={{ fontSize: '0.8rem', fontWeight: 600, letterSpacing: '0.1em' }}>Neural Patterns Confirmed</span>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 12, alignItems: 'center' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 12, color: 'var(--accent)' }}>
+                      <Loader2 className="animate-spin" size={20} />
+                      <span style={{ fontSize: '0.9rem', fontWeight: 600, letterSpacing: '0.1em' }}>NEURAL MATCH: {scanResult ? `${scanResult}%` : 'CALCULATING...'}</span>
+                    </div>
+                    <div style={{ width: 200, height: 2, background: 'rgba(255,255,255,0.05)', borderRadius: 10, overflow: 'hidden' }}>
+                      <motion.div 
+                        initial={{ width: 0 }}
+                        animate={{ width: `${scanResult || 50}%` }}
+                        style={{ height: '100%', background: 'var(--accent)', boxShadow: '0 0 10px var(--accent-glow)' }} 
+                      />
+                    </div>
                   </div>
                 )}
               </div>

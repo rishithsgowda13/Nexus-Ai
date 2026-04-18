@@ -46,15 +46,54 @@ explainer = ExplainabilityEngine()
 # In-memory store for processed alerts
 processed_alerts = []
 
+# ─── Initialization: Load mock threats for demo ───
+def init_mock_data():
+    global processed_alerts
+    # Simulate current time
+    t_start = time.time() - 3600 # Start 1 hour ago
+    
+    # We'll use a subset of SAMPLE_LOGS to populate the dashboard immediately
+    for i, log in enumerate([
+        {"src": "45.33.32.156", "dst": "10.0.0.12", "proto": "TCP", "sig": "CVE-2021-44228", "message": "JNDI lookup attempt in User-Agent header", "fmt": "syslog"},
+        {"src": "185.25.50.12", "dst": "10.0.0.5", "proto": "TCP", "sig": "EternalBlue", "message": "SMBv1 exploit attempt (WannaCry variant)", "fmt": "cef"},
+        {"host": "SolarWinds-Orion-01", "sig": "SUNBURST", "message": "Unexpected outbound connection to avsvmcloud.com (SUNBURST)", "fmt": "syslog"},
+        {"src": "203.0.113.88", "dst": "DC-01", "proto": "LDAP", "sig": "GoldenTicket", "message": "Kerberos ticket-granting ticket (TGT) forged", "fmt": "syslog"},
+    ]):
+        raw = dict(log)
+        fmt = raw.pop("fmt")
+        normalized = ingestor.normalize(raw, fmt)
+        prediction = detector.classify(normalized)
+        
+        # Mapping
+        sig_map = {
+            "CVE-2021-44228": "LOG4SHELL RCE",
+            "EternalBlue": "WANNACRY RANSOMWARE",
+            "SUNBURST": "SOLARWINDS HACK",
+            "GoldenTicket": "KERBEROS EXPLOIT"
+        }
+        if raw.get("sig") in sig_map:
+            prediction["threat_class"] = sig_map[raw.get("sig")]
+            
+        correlated = correlator.correlate(prediction, normalized)
+        final_alert = explainer.finalize_alert(correlated)
+        final_alert["id"] = f"TX-{9500 + i}"
+        # Spread timestamps
+        final_alert["timestamp"] = time.strftime("%H:%M:%S", time.localtime(t_start + (i * 900)))
+        final_alert["raw_source"] = fmt
+        processed_alerts.append(final_alert)
+
+init_mock_data()
+
 # ─── Simulated log sources for demo ───
+# ─── Simulated real-world log sources for demo ───
 SAMPLE_LOGS = [
-    {"src": "192.168.1.105", "dst": "10.0.0.1", "proto": "TCP", "bytes": 4500, "fmt": "netflow"},
-    {"src": "45.12.1.22", "dst": "10.0.0.1", "proto": "UDP", "sig": "MALWARE_WIN_X64", "fmt": "cef"},
-    {"host": "Server-01", "message": "Failed login attempt from admin", "fmt": "syslog"},
-    {"src": "8.8.8.8", "dst": "10.0.0.5", "proto": "ICMP", "bytes": 64, "fmt": "netflow"},
-    {"src": "203.0.113.42", "dst": "10.0.0.1", "proto": "TCP", "bytes": 98000, "fmt": "netflow"},
-    {"host": "Workstation-07", "message": "Unusual process tree detected: powershell.exe -> cmd.exe", "fmt": "syslog"},
-    {"src": "172.16.0.55", "dst": "10.0.0.1", "proto": "UDP", "sig": "SCAN_NMAP", "fmt": "cef"},
+    {"src": "45.33.32.156", "dst": "10.0.0.12", "proto": "TCP", "sig": "CVE-2021-44228", "message": "JNDI lookup attempt in User-Agent header", "fmt": "syslog"},
+    {"src": "185.25.50.12", "dst": "10.0.0.5", "proto": "TCP", "sig": "EternalBlue", "message": "SMBv1 exploit attempt (WannaCry variant)", "fmt": "cef"},
+    {"host": "SolarWinds-Orion-01", "sig": "SUNBURST", "message": "Unexpected outbound connection to avsvmcloud.com (SUNBURST)", "fmt": "syslog"},
+    {"src": "103.45.12.99", "dst": "10.0.0.22", "proto": "HTTPS", "sig": "Emotet", "message": "C2 heartbeat detected - cobalt strike beacon", "fmt": "netflow"},
+    {"src": "203.0.113.88", "dst": "DC-01", "proto": "LDAP", "sig": "GoldenTicket", "message": "Kerberos ticket-granting ticket (TGT) forged", "fmt": "syslog"},
+    {"src": "194.168.1.10", "dst": "10.0.0.1", "proto": "TCP", "sig": "NotPetya", "message": "Lateral movement via PSEXEC/SMB", "fmt": "cef"},
+    {"host": "Ubuntu-Web-02", "sig": "CVE-2017-5638", "message": "Remote Code Execution (RCE) attempt via Struts2 (CVE-2017-5638)", "fmt": "syslog"},
 ]
 
 
@@ -240,12 +279,13 @@ async def ingest_event(req: IngestRequest):
     
     # Map exact Hackit Threat signatures to Dashboard UI names
     sig_map = {
-        "SSH_AUTH_FAIL_BURST": "BRUTE FORCE",
-        "PASS_THE_HASH": "LATERAL MOVEMENT",
-        "LARGE_DATA_OUTBOUND": "DATA EXFILTRATION",
-        "C2_HEARTBEAT_PATTERN": "C2 BEACONING",
-        "NMAP_SCAN_FULL": "PORT SCAN",
-        "SQL_UNION_SELECT": "SQL INJECTION"
+        "CVE-2021-44228": "LOG4SHELL RCE",
+        "EternalBlue": "WANNACRY RANSOMWARE",
+        "SUNBURST": "SOLARWINDS HACK",
+        "Emotet": "EMOTET BOTNET",
+        "GoldenTicket": "KERBEROS EXPLOIT",
+        "NotPetya": "NOTPETYA WIPER",
+        "CVE-2017-5638": "STRUTS2 RCE"
     }
     hackit_sig = raw.get("sig")
     if hackit_sig in sig_map:

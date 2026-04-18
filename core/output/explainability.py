@@ -7,14 +7,13 @@ class ExplainabilityEngine:
     """
     def __init__(self):
         self.reasoning_templates = {
-            "BRUTE FORCE": "Repeated login attempt burst detected. Temporal spacing indicates automated credential stuffing.",
-            "LATERAL MOVEMENT": "SMB traffic detected using administrative pass-the-hash patterns across internal segments.",
-            "DATA EXFILTRATION": "Massive outbound byte transfer to external unverified IP via TCP.",
-            "C2 BEACONING": "Encrypted HTTPS heartbeat pattern matching known Cobalt Strike/Metasploit intervals.",
-            "PORT SCAN": "Sequential SYN packets across multiple destination ports in under 100ms interval.",
-            "SQL INJECTION": "HTTP requests containing UNION SELECT and malformed SQL queries on input fields.",
-            "DDoS": "Volumetric threshold breached. Source IP exhibits repetitive SYN-ack patterns.",
-            "Infiltration": "Unauthorized process 'cmd.exe' spawned following a network anomaly in Layer 3.",
+            "LOG4SHELL RCE": "Exploitation of Log4j2 JNDI lookup vulnerability. Remote code execution attempted via malformed LDAP strings in headers.",
+            "WANNACRY RANSOMWARE": "EternalBlue (MS17-010) exploit detected. Worm-like propagation attempting to encrypt local filesystem.",
+            "SOLARWINDS HACK": "SUNBURST supply-chain compromise. Binary beaconing to malicious DGA domains (avsvmcloud.com) detected.",
+            "EMOTET BOTNET": "Polymorphic banking trojan activity. System participating in coordinated C2 botnet heartbeat and spam distribution.",
+            "KERBEROS EXPLOIT": "Golden Ticket attack detected. Domain Controller targetted via forged TGT for persistent administrative access.",
+            "NOTPETYA WIPER": "Destructive wiper activity using SMB propagation. Aims for total master boot record (MBR) destruction.",
+            "STRUTS2 RCE": "Jakarta Multipart parser vulnerability exploitation. RCE attempt via malformed Content-Type headers.",
             "Benign": "Signal matches standard baseline traffic telemetry."
         }
 
@@ -23,7 +22,7 @@ class ExplainabilityEngine:
         threat = correlation["threat_type"]
         base_reason = self.reasoning_templates.get(threat, f"ML Anomaly Model triggered on generic {threat} patterns.")
         
-        if correlation["status"] == "Genuine" or correlation["severity"] in ["High", "Critical"]:
+        if correlation["status"] == "Genuine" or correlation.get("severity") in ["High", "Critical"]:
             return f"SHAP Analysis: {base_reason} High feature importance on specific payload signatures and threshold variance."
         return f"LIME Analysis: {base_reason} Anomaly probability localized to network-layer metadata."
 
@@ -32,27 +31,25 @@ class ExplainabilityEngine:
         if correlation["status"] != "Genuine":
             return [] # No playbook for False Positives
 
-        sev = correlation["severity"]
+        sev = correlation.get("severity", "Medium")
         threat = correlation["threat_type"]
         
         playbook = ["1. Log incident to SIEM Registry"]
         
-        if threat == "BRUTE FORCE":
-            playbook.extend(["2. Blacklist source IP at Edge Firewall", "3. Force password reset for target account."])
-        elif threat == "LATERAL MOVEMENT":
-            playbook.extend(["2. Disable compromised NTLM hashes", "3. Isolate affected network segment."])
-        elif threat == "DATA EXFILTRATION":
-            playbook.extend(["2. Block outbound IP connection", "3. Initiate DPI (Deep Packet Inspection)."])
-        elif threat == "C2 BEACONING":
-            playbook.extend(["2. Drop outbound C2 traffic via DNS sinkhole", "3. Quarantine localized host."])
-        elif threat == "PORT SCAN":
-            playbook.extend(["2. Add dynamic firewall drop rule for Source IP", "3. Increase edge logging verbosity."])
-        elif threat == "SQL INJECTION":
-            playbook.extend(["2. Enable WAF strict query filtering", "3. Patch vulnerable database input controllers."])
-        elif threat == "DDoS":
-            playbook.extend(["2. Enable CloudFlare high-security mode", "3. Rate-limit source IP at Edge Firewall"])
-        elif threat == "Infiltration":
-            playbook.extend(["2. Isolate infected host process", "3. Reset user access tokens"])
+        if threat == "LOG4SHELL RCE":
+            playbook.extend(["2. Patch Log4j2 to >=2.17.1", "3. Set LOG4J_FORMAT_MSG_NO_LOOKUPS=true.", "4. Isolate vulnerable JVM process."])
+        elif threat == "WANNACRY RANSOMWARE":
+            playbook.extend(["2. Disable SMBv1 immediately", "3. Apply MS17-010 security patch.", "4. Quarantine infected endpoints."])
+        elif threat == "SOLARWINDS HACK":
+            playbook.extend(["2. Revoke SolarWinds Orion signing certificate", "3. Block outbound traffic to avsvmcloud.com.", "4. Audit AD for unauthorized account creation."])
+        elif threat == "EMOTET BOTNET":
+            playbook.extend(["2. Block C2 IP ranges at perimeter", "3. Initiate full system scan with updated EDR.", "4. Reset all user credentials."])
+        elif threat == "KERBEROS EXPLOIT":
+            playbook.extend(["2. Reset KRBTGT account password (twice)", "3. Audit Kerberos event logs for Event IDs 4768/4769.", "4. Monitor for Pass-the-Ticket activity."])
+        elif threat == "NOTPETYA WIPER":
+            playbook.extend(["2. Shutdown affected systems to prevent encryption", "3. Isolate network segments using microsegmentation.", "4. Restore systems from offline backups."])
+        elif threat == "STRUTS2 RCE":
+            playbook.extend(["2. Patch Apache Struts to latest version", "3. Update WAF rules to block OGNL expressions.", "4. Remove temporary web shells."])
         else:
             playbook.extend(["2. Isolate suspicious traffic", "3. Initiate deep forensic audit"])
         

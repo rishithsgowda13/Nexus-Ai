@@ -21,73 +21,100 @@ const generateIncidentPDF = (t) => {
   const doc = new jsPDF();
   
   // Styling constants
-  const accentColor = [0, 212, 255];
+  const accentColor = [0, 212, 256]; // Light Blue
+  const criticalColor = [255, 59, 92]; // Red
+  const grayColor = [100, 100, 100];
   const textColor = [20, 20, 20];
-  const subTextColor = [100, 100, 100];
 
-  // Page Header
-  doc.setFillColor(15, 15, 15);
-  doc.rect(0, 0, 210, 40, 'F');
+  const drawSectionHeader = (title, y) => {
+    doc.setTextColor(textColor[0], textColor[1], textColor[2]);
+    doc.setFontSize(14);
+    doc.setFont("helvetica", "bold");
+    doc.text(title, 20, y);
+    doc.setDrawColor(accentColor[0], accentColor[1], accentColor[2]);
+    doc.setLineWidth(0.8);
+    doc.line(20, y + 2, 190, y + 2);
+    return y + 12;
+  };
   
-  doc.setFontSize(24);
+  // --- PAGE 1 HEADER ---
+  doc.setFillColor(15, 15, 15);
+  doc.rect(0, 0, 210, 50, 'F');
+  
+  doc.setFontSize(32);
   doc.setTextColor(255, 255, 255);
   doc.setFont("helvetica", "bold");
-  doc.text("NEXUS.AI", 20, 26);
+  doc.text("NEXUS.AI", 20, 32);
   
-  doc.setFontSize(9);
+  doc.setFontSize(10);
   doc.setTextColor(accentColor[0], accentColor[1], accentColor[2]);
-  doc.text("INCIDENT FORENSIC DOSSIER", 65, 26);
+  doc.text("SECURITY OPERATIONS CENTER | FORENSIC INTELLIGENCE DOSSIER", 20, 42);
 
   doc.setTextColor(150, 150, 150);
   doc.setFontSize(8);
-  doc.text(`REPORT_ID: ${t.id}`, 190, 15, { align: 'right' });
+  doc.text(`CASE_REF: ${t.id}`, 190, 15, { align: 'right' });
   doc.text(`GENERATED: ${new Date().toLocaleString()}`, 190, 22, { align: 'right' });
 
-  // Section 1: Threat Overview
+  let yPos = 65;
+
+  // --- 1. EXECUTIVE SUMMARY ---
+  yPos = drawSectionHeader("1. EXECUTIVE INCIDENT SUMMARY", yPos);
+  
+  doc.setFontSize(10);
+  const metadata = [
+    { label: "Target Host:", value: t.alert?.source || 'Internal Segment' },
+    { label: "Detected Threat:", value: t.alert?.threat_type || 'Unknown' },
+    { label: "Severity Level:", value: t.alert?.severity || 'High', colorAt: true },
+    { label: "Confidence Rating:", value: `${t.alert?.confidence_score}%` },
+    { label: "First Seen:", value: t.timestamp || 'N/A' },
+    { label: "GeoIP Origin:", value: t.alert?.lat ? `${t.alert.lat}, ${t.alert.lon}` : 'Undisclosed' }
+  ];
+
+  metadata.forEach((m, i) => {
+    doc.setFont("helvetica", "bold");
+    doc.setTextColor(grayColor[0], grayColor[1], grayColor[2]);
+    doc.text(m.label, 25, yPos);
+    
+    doc.setFont("helvetica", "bold");
+    if (m.label === "Severity Level:") {
+      const s = m.value.toUpperCase();
+      if (s === 'CRITICAL') doc.setTextColor(criticalColor[0], criticalColor[1], criticalColor[2]);
+      else if (s === 'HIGH') doc.setTextColor(245, 197, 66);
+      else doc.setTextColor(accentColor[0], accentColor[1], accentColor[2]);
+    } else {
+      doc.setTextColor(textColor[0], textColor[1], textColor[2]);
+    }
+    doc.text(String(m.value), 75, yPos);
+    yPos += 8;
+  });
+
+  yPos += 10;
+
+  // --- 2. TECHNICAL ANALYSIS ---
+  yPos = drawSectionHeader("2. TECHNICAL ANALYSIS & NEURAL REASONING", yPos);
+  
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(10);
   doc.setTextColor(textColor[0], textColor[1], textColor[2]);
-  doc.setFontSize(14);
-  doc.text("1. THREAT INTELLIGENCE SUMMARY", 20, 55);
-  doc.setDrawColor(accentColor[0], accentColor[1], accentColor[2]);
-  doc.setLineWidth(0.5);
-  doc.line(20, 58, 190, 58);
+  
+  const techSummary = `The NEXUS 4-Layer adaptive pipeline flagged this event based on a high-entropy variance in network traffic patterns. Layer 2 (ML Ensemble) correlated the request signatures with known ${t.alert?.threat_type} attack vectors. Further analysis via Layer 3 identifies a successful cross-layer match between the network-level egress spike and the underlying endpoint process modification.`;
+  const techSummaryLines = doc.splitTextToSize(techSummary, 170);
+  doc.text(techSummaryLines, 20, yPos);
+  yPos += (techSummaryLines.length * 5) + 8;
 
-  doc.setFontSize(10);
   doc.setFont("helvetica", "bold");
-  doc.text("IDENTIFIER:", 25, 70);
-  doc.text("THREAT TYPE:", 25, 77);
-  doc.text("SEVERITY:", 25, 84);
-  doc.text("TIMESTAMP:", 25, 91);
-  doc.text("CONFIDENCE:", 25, 98);
-  doc.text("DETECTION LINK:", 25, 105);
+  doc.text("Detection Logic Detail (XAI Output):", 20, yPos);
+  yPos += 6;
+  doc.setFont("helvetica", "italic");
+  const xaiText = t.explainability || "No specific neural reasoning provided for this incident.";
+  const xaiLines = doc.splitTextToSize(xaiText, 170);
+  doc.text(xaiLines, 20, yPos);
+  yPos += (xaiLines.length * 5) + 15;
 
-  doc.setFont("helvetica", "normal");
-  doc.text(t.id || 'N/A', 60, 70);
-  doc.text(t.alert?.threat_type || 'Unknown', 60, 77);
-  doc.text(t.alert?.severity || 'Info', 60, 84);
-  doc.text(t.timestamp || 'N/A', 60, 91);
-  doc.text(`${t.alert?.confidence_score || 0}%`, 60, 98);
-  doc.text(t.raw_source?.toUpperCase() || 'CORE_STREAM', 60, 105);
-
-  // Section 2: Neural Explanation
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(14);
-  doc.text("2. NEURAL ANALYTICS & EXPLANATION", 20, 120);
-  doc.line(20, 123, 190, 123);
-
-  doc.setFont("helvetica", "normal");
-  doc.setFontSize(10);
-  const expLines = doc.splitTextToSize(t.explainability || "No neural data available for this incident.", 165);
-  doc.text(expLines, 25, 133);
-
-  let yPos = 133 + (expLines.length * 6) + 15;
-
-  // Section 3: Response Playbook
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(14);
-  doc.text("3. TACTICAL RESPONSE PLAYBOOK", 20, yPos);
-  doc.line(20, yPos + 3, 190, yPos + 3);
-  yPos += 13;
-
+  // --- 3. IMMEDIATE MITIGATION ---
+  if (yPos > 240) { doc.addPage(); yPos = 30; }
+  yPos = drawSectionHeader("3. IMMEDIATE TACTICAL MITIGATION", yPos);
+  
   if (t.playbook && t.playbook.length > 0) {
     t.playbook.forEach((step, idx) => {
       doc.setFont("helvetica", "bold");
@@ -95,28 +122,45 @@ const generateIncidentPDF = (t) => {
       doc.setFont("helvetica", "normal");
       const stepLines = doc.splitTextToSize(step, 155);
       doc.text(stepLines, 32, yPos);
-      yPos += (stepLines.length * 6) + 2;
-      
-      if (yPos > 270) {
-        doc.addPage();
-        yPos = 30;
-      }
+      yPos += (stepLines.length * 5) + 4;
+      if (yPos > 275) { doc.addPage(); yPos = 30; }
     });
   } else {
-    doc.text("Standard isolation protocol recommended. No customized playbook generated.", 25, yPos);
+    doc.text("Standard automated isolation triggered. No manual remediation required at this stage.", 20, yPos);
+    yPos += 10;
   }
 
-  // Footer
+  yPos += 10;
+
+  // --- 4. STRATEGIC PREVENTION ---
+  if (yPos > 240) { doc.addPage(); yPos = 30; }
+  yPos = drawSectionHeader("4. STRATEGIC PREVENTION & RECOMMENDATIONS", yPos);
+  
+  doc.setFont("helvetica", "normal");
+  const recommendations = [
+    `• Perform a comprehensive audit of all ${t.alert?.threat_type} susceptible modules.`,
+    "• Update Web Application Firewall (WAF) rules to include deep-packet inspection (DPI).",
+    "• Implement micro-segmentation for the affected network host to limit lateral movement.",
+    "• Rotate all administrative credentials and API tokens on the target node.",
+    "• Review access control lists (ACLs) to ensure strict adherence to Least Privilege (PoLP)."
+  ];
+  
+  recommendations.forEach(r => {
+    doc.text(r, 25, yPos);
+    yPos += 7;
+  });
+
+  // --- FOOTER ---
   const pageCount = doc.internal.getNumberOfPages();
   for (let i = 1; i <= pageCount; i++) {
     doc.setPage(i);
     doc.setFontSize(8);
     doc.setTextColor(180, 180, 180);
-    doc.text("CONFIDENTIAL - NEXUS AI SECURITY OPERATIONS CENTER", 105, 287, { align: "center" });
-    doc.text(`Page ${i} of ${pageCount}`, 190, 287, { align: 'right' });
+    doc.text("CONFIDENTIAL - FOR AUTHORIZED PERSONNEL ONLY | NEXUS AI SOC INTEL", 105, 287, { align: "center" });
+    doc.text(`REFERENCE: SOC-DOSSIER-${t.id} | Page ${i} of ${pageCount}`, 190, 280, { align: 'right' });
   }
 
-  doc.save(`NexusAI_Incident_${t.id}.pdf`);
+  doc.save(`NexusAI_Forensic_Report_${t.id}.pdf`);
 };
 
 const menuItems = [

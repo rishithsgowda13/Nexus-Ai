@@ -4,7 +4,7 @@ import { motion } from 'framer-motion';
 
 const sevClass = { Critical: 'badge-critical', High: 'badge-high', Medium: 'badge-high', Low: 'badge-low', Info: 'badge-info' };
 
-export default function ThreatFeed({ threats = [], expanded = false, onSelectThreat }) {
+export default function ThreatFeed({ threats = [], expanded = false, onSelectThreat, onAgentAction }) {
 
   if (threats.length === 0) {
     return (

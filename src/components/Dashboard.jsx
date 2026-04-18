@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { 
   Shield, AlertTriangle, Activity, MessageSquare, Settings, LogOut, 
   Search, Bell, Zap, CheckCircle, XCircle, Layers, Play, RefreshCw,
@@ -28,11 +28,12 @@ export default function Dashboard({ user, onLogout }) {
   const [threats, setThreats] = useState([]);
   const [simulating, setSimulating] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [selectedThreat, setSelectedThreat] = useState(null);
 
   useEffect(() => {
     const init = async () => {
       await Promise.all([fetchHealth(), fetchStats(), fetchThreats()]);
-      setTimeout(() => setLoading(false), 2000); // Artificial delay for premium feel
+      setTimeout(() => setLoading(false), 2000); 
     };
     init();
 
@@ -40,7 +41,6 @@ export default function Dashboard({ user, onLogout }) {
     tick();
     const id = setInterval(tick, 1000);
     
-    // Auto-polling for real-time updates from simulator
     const pollId = setInterval(() => {
       fetchStats();
       fetchThreats();
@@ -52,8 +52,6 @@ export default function Dashboard({ user, onLogout }) {
       clearInterval(pollId);
     };
   }, []);
-
-
 
   const fetchHealth = async () => {
     try {
@@ -97,8 +95,6 @@ export default function Dashboard({ user, onLogout }) {
 
   return (
     <div className="scanline grid-bg" style={{ display: 'flex', height: '100vh', overflow: 'hidden', color: '#fff', background: 'transparent' }}>
-      
-      {/* SIDEBAR */}
       <aside style={{
         width: 280,
         borderRight: '1px solid rgba(255,255,255,0.04)',
@@ -146,7 +142,6 @@ export default function Dashboard({ user, onLogout }) {
           ))}
         </nav>
 
-        {/* Live Layer Status from API */}
         <div style={{ padding: '16px 20px', borderTop: '1px solid rgba(255,255,255,0.04)' }}>
           <p style={{
             fontSize: '0.55rem', color: 'rgba(255,255,255,0.25)',
@@ -176,7 +171,6 @@ export default function Dashboard({ user, onLogout }) {
           </div>
         </div>
 
-        {/* User */}
         <div style={{ padding: '20px', borderTop: '1px solid rgba(255,255,255,0.04)' }}>
           <div className="glass-card" style={{ padding: '14px 16px', display: 'flex', alignItems: 'center', gap: 12, marginBottom: 12, borderRadius: 12 }}>
             <div style={{
@@ -220,7 +214,6 @@ export default function Dashboard({ user, onLogout }) {
         </div>
       </aside>
 
-      {/* MAIN */}
       <main style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', position: 'relative' }}>
         <header style={{
           display: 'flex', alignItems: 'center',
@@ -300,13 +293,11 @@ export default function Dashboard({ user, onLogout }) {
                 exit={{ opacity: 0 }}
                 style={{ display: 'flex', flexDirection: 'column', gap: 32 }}
               >
-                {/* Header Skeleton */}
                 <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12, marginBottom: 20 }}>
                   <div className="skeleton" style={{ width: 400, height: 48 }} />
                   <div className="skeleton" style={{ width: 300, height: 12 }} />
                 </div>
 
-                {/* Stats Grid Skeleton */}
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16 }}>
                   {[1,2,3,4].map(i => (
                     <div key={i} className="skeleton-card" style={{ height: 120 }}>
@@ -316,7 +307,6 @@ export default function Dashboard({ user, onLogout }) {
                   ))}
                 </div>
 
-                {/* Main View Skeletons */}
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 340px', gap: 32 }}>
                    <div className="skeleton-card" style={{ height: 400 }} />
                    <div className="skeleton-card" style={{ height: 400 }} />
@@ -324,9 +314,9 @@ export default function Dashboard({ user, onLogout }) {
               </motion.div>
             ) : (
               <>
-                {activeTab === 'overview' && <OverviewTab key="ov" stats={stats} threats={threats} isIntelligence={false} />}
-                {activeTab === 'threats' && <IntelligenceTab key="th" threats={threats} onNavigate={setActiveTab} />}
-                {activeTab === 'nexus-ai' && <NexusAITab key="ai" threats={threats} />}
+                {activeTab === 'overview' && <OverviewTab key="ov" stats={stats} threats={threats} isIntelligence={false} selectedThreat={selectedThreat} setSelectedThreat={setSelectedThreat} />}
+                {activeTab === 'threats' && <IntelligenceTab key="th" threats={threats} onNavigate={setActiveTab} onSendToAgent={setSelectedThreat} />}
+                {activeTab === 'nexus-ai' && <NexusAITab key="ai" threats={threats} selectedThreat={selectedThreat} onSelectThreat={setSelectedThreat} />}
                 {activeTab === 'settings' && (
                   <motion.div key="st" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} style={{
                     display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', gap: 16,
@@ -352,9 +342,7 @@ export default function Dashboard({ user, onLogout }) {
   );
 }
 
-function OverviewTab({ stats, threats, isIntelligence }) {
-  const [selectedThreat, setSelectedThreat] = useState(null);
-
+function OverviewTab({ stats, threats, isIntelligence, selectedThreat, setSelectedThreat }) {
   const statCards = [
     { label: "Data Throughput", value: stats?.throughput || "—", trend: `${stats?.events_per_sec || 0} evt/s`, icon: Activity, layer: "L1", color: "#f5c542" },
     { label: "Anomaly Count", value: String(stats?.anomaly_count || 0), trend: "Total", icon: AlertTriangle, layer: "L2", color: "#ffa600" },
@@ -442,6 +430,14 @@ function OverviewTab({ stats, threats, isIntelligence }) {
                 <div style={{ marginBottom: 16, fontSize: '0.7rem', color: 'rgba(255,255,255,0.6)', lineHeight: 1.6 }}>
                   <strong style={{ color: '#a855f7', display: 'block', marginBottom: 6, fontSize: '0.6rem', letterSpacing: '0.1em' }}>EXPLANATION:</strong>
                   {selectedThreat.explainability}
+                  {selectedThreat.id && (
+                    <button 
+                      onClick={() => setSelectedThreat(null)}
+                      style={{ marginTop: 12, display: 'block', background: 'transparent', border: '1px solid rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.4)', fontSize: '0.55rem', padding: '4px 8px', borderRadius: 4, cursor: 'pointer' }}
+                    >
+                      Clear Selection
+                    </button>
+                  )}
                 </div>
               </div>
 
@@ -493,7 +489,12 @@ function ActionButton({ icon: Icon, label, color, onClick, disabled }) {
   );
 }
 
-function IntelligenceTab({ threats, onNavigate }) {
+function IntelligenceTab({ threats, onNavigate, onSendToAgent }) {
+  const handleAgentPush = (threat) => {
+    onSendToAgent(threat);
+    onNavigate('nexus-ai');
+  };
+
   const majorThreats = (threats || []).filter(t => t.alert?.status === 'Genuine');
   const [leftWidth, setLeftWidth] = useState(33.33);
 
@@ -525,7 +526,6 @@ function IntelligenceTab({ threats, onNavigate }) {
 
   return (
     <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -12 }} style={{ display: 'flex', height: '100%' }}>
-      {/* LEFT COLUMN: MAJOR THREATS */}
       <div className="glass-card" style={{ width: `calc(${leftWidth}% - 12px)`, padding: 28, display: 'flex', flexDirection: 'column', minHeight: 500, overflow: 'hidden' }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24, paddingBottom: 16, borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
@@ -538,11 +538,10 @@ function IntelligenceTab({ threats, onNavigate }) {
           </div>
         </div>
         <div style={{ flex: 1, overflowY: 'hidden', display: 'flex', flexDirection: 'column' }}>
-           <ThreatFeed threats={majorThreats} onSelectThreat={() => onNavigate('nexus-ai')} expanded={false} />
+           <ThreatFeed threats={majorThreats} onSelectThreat={handleAgentPush} onAgentAction={handleAgentPush} expanded={false} />
         </div>
       </div>
       
-      {/* RESIZER */}
       <div 
         onMouseDown={startResizing}
         style={{ 
@@ -565,7 +564,6 @@ function IntelligenceTab({ threats, onNavigate }) {
         />
       </div>
 
-      {/* RIGHT COLUMN: ALL THREATS AND RESOLUTIONS */}
       <div className="glass-card" style={{ flex: 1, padding: 28, display: 'flex', flexDirection: 'column', minHeight: 500, overflow: 'hidden', minWidth: 0 }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24, paddingBottom: 16, borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
@@ -588,16 +586,15 @@ function IntelligenceTab({ threats, onNavigate }) {
           </div>
         </div>
         <div style={{ flex: 1, overflowY: 'hidden', display: 'flex', flexDirection: 'column' }}>
-           <ThreatFeed threats={threats} expanded={false} />
+           <ThreatFeed threats={threats} expanded={false} onAgentAction={handleAgentPush} />
         </div>
       </div>
     </motion.div>
   );
 }
 
-function NexusAITab({ threats }) {
+function NexusAITab({ threats, selectedThreat, onSelectThreat }) {
   const [leftWidth, setLeftWidth] = useState(50);
-  const [selectedThreat, setSelectedThreat] = useState(null);
   const chatRef = useRef(null);
 
   const startResizing = (e) => {
@@ -661,7 +658,6 @@ function NexusAITab({ threats }) {
       exit={{ opacity: 0, y: -20 }} 
       style={{ height: 'calc(100vh - 160px)', display: 'flex', flexDirection: 'column', gap: 24 }}
     >
-      {/* Upper Intelligence Sector */}
       <div style={{ display: 'flex', flex: 1, minHeight: 0 }}>
         <div className={`glass-card ${selectedThreat ? 'selected-threat-border' : ''}`} style={{ width: `calc(${leftWidth}% - 12px)`, display: 'flex', flexDirection: 'column', overflow: 'hidden', border: selectedThreat ? '1px solid var(--accent)' : '1px solid rgba(255,255,255,0.05)' }}>
           <div style={{ padding: '16px 20px', borderBottom: '1px solid rgba(255,255,255,0.05)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
@@ -671,7 +667,7 @@ function NexusAITab({ threats }) {
             </div>
             {selectedThreat && (
               <button 
-                onClick={() => setSelectedThreat(null)}
+                onClick={() => onSelectThreat(null)}
                 style={{ background: 'transparent', border: 'none', color: 'rgba(255,255,255,0.3)', cursor: 'pointer', fontSize: '0.6rem' }}
               >
                 Clear Selection
@@ -679,11 +675,10 @@ function NexusAITab({ threats }) {
             )}
           </div>
           <div style={{ flex: 1, overflowY: 'auto', padding: 20 }}>
-            <ThreatFeed threats={threats} expanded={true} onSelectThreat={setSelectedThreat} />
+            <ThreatFeed threats={threats} expanded={true} onSelectThreat={onSelectThreat} />
           </div>
         </div>
         
-        {/* RESIZER */}
         <div 
           onMouseDown={startResizing}
           style={{ 
@@ -717,7 +712,6 @@ function NexusAITab({ threats }) {
         </div>
       </div>
 
-      {/* Tactical Action Deck */}
       <div className="glass-card" style={{ padding: '16px 24px', display: 'flex', alignItems: 'center', gap: 16 }}>
         <span style={{ fontSize: '0.65rem', fontWeight: 800, color: 'rgba(255,255,255,0.25)', letterSpacing: '0.2em' }}>TACTICAL ACTIONS:</span>
         <div style={{ display: 'flex', gap: 12, flex: 1 }}>

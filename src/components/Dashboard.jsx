@@ -1,9 +1,11 @@
 "use client";
 import { useState, useEffect, useRef } from 'react';
+import { jsPDF } from 'jspdf';
 import { 
-  Shield, AlertTriangle, Activity, MessageSquare, Settings, LogOut, 
+  Shield, AlertTriangle, Activity, MessageSquare, History, LogOut, 
   Search, Bell, Zap, CheckCircle, XCircle, Layers, Play, RefreshCw,
-  ChevronRight, Hexagon, Radio
+  ChevronRight, Hexagon, Radio, FileText, Download, Clock,
+  Terminal, Cpu, CpuIcon, X, Check, ArrowRight
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import ThreatFeed from './ThreatFeed';
@@ -17,7 +19,7 @@ const menuItems = [
   { id: 'overview', icon: Activity, label: 'Overview' },
   { id: 'threats', icon: Shield, label: 'Intelligence' },
   { id: 'nexus-ai', icon: MessageSquare, label: 'Nexus AI' },
-  { id: 'settings', icon: Settings, label: 'Settings' },
+  { id: 'history', icon: History, label: 'History' },
 ];
 
 export default function Dashboard({ user, onLogout }) {
@@ -317,26 +319,21 @@ export default function Dashboard({ user, onLogout }) {
                 {activeTab === 'overview' && <OverviewTab key="ov" stats={stats} threats={threats} isIntelligence={false} selectedThreat={selectedThreat} setSelectedThreat={setSelectedThreat} />}
                 {activeTab === 'threats' && <IntelligenceTab key="th" threats={threats} onNavigate={setActiveTab} onSendToAgent={setSelectedThreat} />}
                 {activeTab === 'nexus-ai' && <NexusAITab key="ai" threats={threats} selectedThreat={selectedThreat} onSelectThreat={setSelectedThreat} />}
-                {activeTab === 'settings' && (
-                  <motion.div key="st" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} style={{
-                    display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', gap: 16,
-                  }}>
-                    <Settings size={32} color="rgba(245,197,66,0.1)" />
-                    <p style={{
-                      fontSize: '0.7rem', color: 'rgba(255,255,255,0.2)',
-                      letterSpacing: '0.3em', textTransform: 'uppercase',
-                      fontFamily: 'Orbitron, sans-serif',
-                    }}>Configuration Module</p>
-                    <p style={{
-                      fontSize: '0.6rem', color: 'rgba(245,197,66,0.2)',
-                      letterSpacing: '0.15em',
-                    }}>Coming Soon</p>
-                  </motion.div>
-                )}
+                {activeTab === 'history' && <HistoryTab threats={threats} />}
               </>
             )}
           </AnimatePresence>
         </div>
+
+        {/* Global Inspector Modal */}
+        <AnimatePresence>
+          {activeTab === 'overview' && selectedThreat && (
+            <ThreatInspector 
+              threat={selectedThreat} 
+              onClose={() => setSelectedThreat(null)} 
+            />
+          )}
+        </AnimatePresence>
       </main>
     </div>
   );
@@ -389,7 +386,7 @@ function OverviewTab({ stats, threats, isIntelligence, selectedThreat, setSelect
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 20 }}>
-        <div className="glass-card" style={{ padding: 28, display: 'flex', flexDirection: 'column', minHeight: 500 }}>
+        <div className="glass-card" style={{ padding: 28, display: 'flex', flexDirection: 'column', minHeight: 600 }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24, paddingBottom: 16, borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
               <Zap size={16} color="#00d4ff" />
@@ -410,58 +407,198 @@ function OverviewTab({ stats, threats, isIntelligence, selectedThreat, setSelect
                 }} />
               </div>
           </div>
-          <ThreatFeed threats={threats} onSelectThreat={isIntelligence ? setSelectedThreat : null} expanded={false} />
+          <ThreatFeed threats={threats} onSelectThreat={setSelectedThreat} expanded={false} />
         </div>
-        <div className="glass-card" style={{ padding: 28, display: 'flex', flexDirection: 'column', minHeight: 500 }}>
+        <div className="glass-card" style={{ padding: 28, display: 'flex', flexDirection: 'column', minHeight: 600 }}>
           <div style={{ marginBottom: 24, paddingBottom: 16, borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
             <span style={{
               fontSize: '0.65rem', fontWeight: 700,
               color: '#00d4ff', letterSpacing: '0.15em', textTransform: 'uppercase',
               fontFamily: 'Orbitron, sans-serif',
-            }}>
-              {selectedThreat ? `Threat Analytics: ${selectedThreat.id}` : 'ML Analytics'}
-            </span>
+            }}>ML Platform Analytics</span>
           </div>
-
-          {selectedThreat ? (
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
-              <div style={{ padding: 16, background: 'rgba(255,255,255,0.02)', borderRadius: 12, border: '1px solid rgba(255,255,255,0.05)' }}>
-                <h4 style={{ margin: '0 0 12px 0', fontSize: '0.75rem', color: '#fff' }}>{selectedThreat.alert?.threat_type || 'Unknown'}</h4>
-                <div style={{ marginBottom: 16, fontSize: '0.7rem', color: 'rgba(255,255,255,0.6)', lineHeight: 1.6 }}>
-                  <strong style={{ color: '#a855f7', display: 'block', marginBottom: 6, fontSize: '0.6rem', letterSpacing: '0.1em' }}>EXPLANATION:</strong>
-                  {selectedThreat.explainability}
-                  {selectedThreat.id && (
-                    <button 
-                      onClick={() => setSelectedThreat(null)}
-                      style={{ marginTop: 12, display: 'block', background: 'transparent', border: '1px solid rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.4)', fontSize: '0.55rem', padding: '4px 8px', borderRadius: 4, cursor: 'pointer' }}
-                    >
-                      Clear Selection
-                    </button>
-                  )}
-                </div>
-              </div>
-
-              {selectedThreat.playbook && selectedThreat.playbook.length > 0 && (
-                <div style={{ padding: 16, background: 'rgba(0,0,0,0.3)', borderRadius: 12, border: '1px solid rgba(0,212,255,0.1)' }}>
-                  <strong style={{ display: 'block', color: '#00d4ff', fontSize: '0.65rem', letterSpacing: '0.1em', marginBottom: 12 }}>
-                    RESPONSE PLAYBOOK ({selectedThreat.playbook.length} STEPS)
-                  </strong>
-                  <ul style={{ margin: 0, padding: 0, listStyle: 'none', display: 'flex', flexDirection: 'column', gap: 10 }}>
-                    {selectedThreat.playbook.map((step, idx) => (
-                      <li key={idx} style={{ fontSize: '0.65rem', color: 'rgba(255,255,255,0.6)', display: 'flex', gap: 8, lineHeight: 1.5 }}>
-                        <span style={{ color: '#ff3b5c', marginTop: 1 }}>›</span> {step}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-            </motion.div>
-          ) : (
-            <ThreatStats stats={stats} />
-          )}
+           <ThreatStats stats={stats} />
         </div>
       </div>
     </motion.div>
+  );
+}
+
+function ThreatInspector({ threat, onClose }) {
+  const isGenuine = threat.alert?.status === 'Genuine';
+  const severity = threat.alert?.severity || 'LOW';
+
+  const layers = [
+    { 
+      label: "Ingestion Pipeline", 
+      status: "CAPTURED", 
+      detail: "Normalized from cef source stream.",
+      subDetail: threat.raw_source ? `RAW_BUF: ${JSON.stringify(threat.raw_source).substring(0,20)}...` : "RAW_BUF: 0xFD2A...",
+      icon: Terminal, 
+      color: "#00d4ff" 
+    },
+    { 
+      label: "ML Classification", 
+      status: "ANALYZED", 
+      detail: `Ensemble (XGB+RF) flagged ${threat.alert?.threat_type} signature.`,
+      subDetail: `Conf: ${threat.alert?.confidence_score}%`,
+      icon: Cpu, 
+      color: "#f5c542" 
+    },
+    { 
+      label: "Neural Correlation", 
+      status: "CORRELATED", 
+      detail: isGenuine ? "Linked: Network -> Endpoint Process" : "Uncorrelated / Noise", 
+      subDetail: "Nodes: 57 connected",
+      icon: Activity, 
+      color: "#a855f7" 
+    },
+    { 
+      label: "Expert Output", 
+      status: "STABILIZED", 
+      detail: "Playbook generated and injected into operator console.", 
+      subDetail: "READY",
+      icon: Zap, 
+      color: "#00ff88" 
+    },
+  ];
+
+  return (
+    <div style={{
+      position: 'fixed', inset: 0, zIndex: 1000,
+      background: 'rgba(0,0,0,0.85)',
+      backdropFilter: 'blur(10px)',
+      display: 'flex', alignItems: 'center', justifyContent: 'center',
+      padding: 40
+    }}>
+      <motion.div 
+        initial={{ opacity: 0, scale: 0.9, y: 20 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        exit={{ opacity: 0, scale: 0.9, y: 20 }}
+        className="glass-card"
+        style={{
+          width: '100%', maxWidth: 1000,
+          background: '#0a0a0a',
+          border: '1px solid rgba(255,255,255,0.1)',
+          borderRadius: 24,
+          padding: 48,
+          position: 'relative',
+          overflow: 'hidden'
+        }}
+      >
+        {/* Header */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 48 }}>
+          <div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 12 }}>
+              <span style={{ fontSize: '0.65rem', color: 'rgba(255,255,255,0.4)', fontWeight: 700, fontFamily: 'JetBrains Mono, monospace' }}>{threat.id}</span>
+              <span className={`badge ${severity === 'CRITICAL' ? 'badge-critical' : severity === 'HIGH' ? 'badge-high' : 'badge-low'}`}>
+                {severity}
+              </span>
+            </div>
+            <h1 style={{ fontSize: '2rem', fontWeight: 800, color: '#fff', fontFamily: 'Orbitron, sans-serif', margin: 0 }}>
+              {threat.alert?.threat_type}
+            </h1>
+          </div>
+          <button 
+            onClick={onClose}
+            style={{ 
+              background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)', 
+              borderRadius: 12, padding: 12, cursor: 'pointer', color: 'rgba(255,255,255,0.3)',
+              transition: 'all 0.3s'
+            }}
+            onMouseEnter={e => e.currentTarget.style.color = '#fff'}
+            onMouseLeave={e => e.currentTarget.style.color = 'rgba(255,255,255,0.3)'}
+          >
+            <X size={20} />
+          </button>
+        </div>
+
+        <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: 64 }}>
+          {/* Left: Forensic Path */}
+          <div>
+            <h3 style={{ fontSize: '0.65rem', color: 'rgba(255,255,255,0.3)', letterSpacing: '0.2em', textTransform: 'uppercase', marginBottom: 32 }}>Neural Forensic Path</h3>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 0, position: 'relative' }}>
+              {layers.map((l, i) => (
+                <div key={i} style={{ display: 'flex', gap: 24, minHeight: 110, position: 'relative' }}>
+                   {/* Vertical Line */}
+                   {i < layers.length - 1 && (
+                     <div style={{
+                       position: 'absolute', top: 40, left: 19, bottom: 0,
+                       width: 2, background: 'rgba(255,255,255,0.05)'
+                     }} />
+                   )}
+                   
+                   <div style={{ 
+                     width: 40, height: 40, borderRadius: 12, background: `${l.color}15`, 
+                     border: `1px solid ${l.color}30`, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                     flexShrink: 0, zIndex: 1
+                   }}>
+                     <l.icon size={18} color={l.color} />
+                   </div>
+
+                   <div style={{ flex: 1, paddingBottom: 32 }}>
+                     <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 4 }}>
+                       <span style={{ fontSize: '0.85rem', fontWeight: 700, color: '#fff' }}>{l.label}</span>
+                       <span style={{ fontSize: '0.5rem', fontWeight: 800, color: l.color, letterSpacing: '0.05em' }}>{l.status}</span>
+                     </div>
+                     <p style={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.5)', margin: '0 0 10px 0' }}>{l.detail}</p>
+                     <div style={{ 
+                       background: 'rgba(255,255,255,0.02)', padding: '6px 10px', borderRadius: 4, 
+                       fontSize: '0.55rem', color: 'rgba(255,255,255,0.25)', fontFamily: 'JetBrains Mono, monospace'
+                     }}>
+                       {l.subDetail}
+                     </div>
+                   </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Right: Tactical Playbook */}
+          <div>
+            <h3 style={{ fontSize: '0.65rem', color: 'rgba(255,255,255,0.3)', letterSpacing: '0.2em', textTransform: 'uppercase', marginBottom: 32 }}>Tactical Playbook</h3>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 16, marginBottom: 48 }}>
+              {(threat.playbook || ["ISOLATE SOURCE", "RE-ROUTE TRAFFIC", "CAPTURE TELEMETRY", "NOTIFY SYSTEMS"]).map((step, i) => (
+                <div key={i} className="glass-card" style={{ padding: 20, display: 'flex', alignItems: 'center', gap: 16, borderRadius: 16 }}>
+                  <div style={{ 
+                    width: 20, height: 20, borderRadius: 6, border: '2px solid rgba(0,255,136,0.3)',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center'
+                  }}>
+                    <Check size={12} color="#00ff88" style={{ opacity: 0.8 }} />
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                    <span style={{ fontSize: '0.75rem', fontWeight: 700, color: '#fff', letterSpacing: '0.02em' }}>{i + 1}. {step}</span>
+                    <span style={{ fontSize: '0.55rem', color: 'rgba(255,255,255,0.25)' }}>Lockdown protocol initiated...</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <button style={{
+              width: '100%',
+              padding: '20px',
+              borderRadius: 16,
+              background: '#00ff88',
+              border: 'none',
+              color: '#000',
+              fontWeight: 800,
+              fontSize: '0.75rem',
+              fontFamily: 'Orbitron, sans-serif',
+              letterSpacing: '0.1em',
+              textTransform: 'uppercase',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: 12,
+              boxShadow: '0 0 30px rgba(0,255,136,0.2)'
+            }}>
+              <CheckCircle size={18} /> Execute All Measures
+            </button>
+          </div>
+        </div>
+      </motion.div>
+    </div>
   );
 }
 
@@ -538,7 +675,7 @@ function IntelligenceTab({ threats, onNavigate, onSendToAgent }) {
           </div>
         </div>
         <div style={{ flex: 1, overflowY: 'hidden', display: 'flex', flexDirection: 'column' }}>
-           <ThreatFeed threats={majorThreats} onSelectThreat={handleAgentPush} onAgentAction={handleAgentPush} expanded={false} />
+           <ThreatFeed threats={majorThreats} onSelectThreat={handleAgentPush} expanded={false} />
         </div>
       </div>
       
@@ -586,7 +723,7 @@ function IntelligenceTab({ threats, onNavigate, onSendToAgent }) {
           </div>
         </div>
         <div style={{ flex: 1, overflowY: 'hidden', display: 'flex', flexDirection: 'column' }}>
-           <ThreatFeed threats={threats} expanded={false} onAgentAction={handleAgentPush} />
+           <ThreatFeed threats={threats} expanded={false} />
         </div>
       </div>
     </motion.div>
@@ -625,15 +762,13 @@ function NexusAITab({ threats, selectedThreat, onSelectThreat }) {
 
   const explainThreat = () => {
     if (!selectedThreat || !chatRef.current) return;
-    chatRef.current.addMessage('user', `Explain threat: ${selectedThreat.alert?.threat_type} (${selectedThreat.id})`);
-    chatRef.current.addMessage('system', `ANALYZING THREAT: ${selectedThreat.id}\n\nType: ${selectedThreat.alert?.threat_type}\nSource: ${selectedThreat.alert?.source}\nSeverity: ${selectedThreat.alert?.severity}\nConfidence: ${selectedThreat.alert?.confidence_score}%\n\nEXPLANATION: ${selectedThreat.explainability}\n\nImpact Assessment: High risk to peripheral nodes. Possible lateral movement detected.`);
+    chatRef.current.addMessage('action', `ANALYZING THREAT: ${selectedThreat.id}\n\nType: ${selectedThreat.alert?.threat_type}\nSource: ${selectedThreat.alert?.source}\nSeverity: ${selectedThreat.alert?.severity}\nConfidence: ${selectedThreat.alert?.confidence_score}%\n\nEXPLANATION: ${selectedThreat.explainability}\n\nImpact Assessment: High risk to peripheral nodes. Possible lateral movement detected.`, { actionType: 'Threat Analysis' });
   };
 
   const simulatePlaybook = () => {
     if (!selectedThreat || !chatRef.current) return;
-    chatRef.current.addMessage('user', `Simulate playbook for ${selectedThreat.id}`);
     
-    let message = "EXECUTING DEFENSIVE PLAYBOOK SIMULATION...\n\n";
+    let message = `NEXUS AI DEFENSE PROJECTION FOR ${selectedThreat.id}:\n\n`;
     if (selectedThreat.playbook && selectedThreat.playbook.length > 0) {
       selectedThreat.playbook.forEach((step, i) => {
         message += `STEP ${i + 1}: ${step}\n`;
@@ -641,13 +776,12 @@ function NexusAITab({ threats, selectedThreat, onSelectThreat }) {
     } else {
       message += "No automated playbook found for this threat type. Initiating standard isolation protocol.";
     }
-    chatRef.current.addMessage('system', message);
+    chatRef.current.addMessage('action', message, { actionType: 'Defense Simulation' });
   };
 
   const defendSystem = () => {
     if (!selectedThreat || !chatRef.current) return;
-    chatRef.current.addMessage('system', `⚠ AUTOMATED DEFENSE TRIGGERED: Attempting to neutralize ${selectedThreat.id}...\n\nAction: Isolate Source IP (${selectedThreat.alert?.source})\nStatus: PENDING USER APPROVAL`);
-    chatRef.current.addMessage('system', `Please confirm: Should I proceed with the neutralization of this threat? (Type 'Approve' or 'Reject')`);
+    chatRef.current.addMessage('action', `⚠ AUTOMATED DEFENSE TRIGGERED: Attempting to neutralize ${selectedThreat.id}...\n\nAction: Isolate Source IP (${selectedThreat.alert?.source})\nStatus: PENDING USER APPROVAL\n\nPlease confirm: Should I proceed with the neutralization of this threat? (Type 'Approve' or 'Reject')`, { actionType: 'Threat Containment' });
   };
 
   return (
@@ -742,13 +876,222 @@ function NexusAITab({ threats, selectedThreat, onSelectThreat }) {
             color="#ff3b5c" 
             disabled={!selectedThreat} 
             onClick={() => {
-              if (chatRef.current) chatRef.current.addMessage('system', `ISOLATING NODE: ${selectedThreat?.alert?.source}...`);
+              if (chatRef.current) chatRef.current.addMessage('action', `ISOLATING NODE: ${selectedThreat?.alert?.source}...\n\nStatus: NODE DISCONNECTED FROM NEURAL LINK`, { actionType: 'Node Isolation' });
             }}
           />
+
         </div>
         <div style={{ padding: '8px 16px', background: 'rgba(245,197,66,0.05)', border: '1px solid rgba(245,197,66,0.1)', borderRadius: 8 }}>
            <span className="pulse-text" style={{ fontSize: '0.6rem', fontWeight: 700, color: 'var(--accent)', letterSpacing: '0.1em' }}>NEURAL LINK: ENCRYPTED</span>
         </div>
+      </div>
+    </motion.div>
+  );
+}
+
+function HistoryTab({ threats }) {
+  const generateIncidentPDF = (t) => {
+    const doc = new jsPDF();
+    
+    // Styling constants
+    const accentColor = [0, 212, 255];
+    const textColor = [20, 20, 20];
+    const subTextColor = [100, 100, 100];
+
+    // Page Header
+    doc.setFillColor(15, 15, 15);
+    doc.rect(0, 0, 210, 40, 'F');
+    
+    doc.setFontSize(24);
+    doc.setTextColor(255, 255, 255);
+    doc.setFont("helvetica", "bold");
+    doc.text("NEXUS.AI", 20, 26);
+    
+    doc.setFontSize(9);
+    doc.setTextColor(accentColor[0], accentColor[1], accentColor[2]);
+    doc.text("INCIDENT FORENSIC DOSSIER", 65, 26);
+
+    doc.setTextColor(150, 150, 150);
+    doc.setFontSize(8);
+    doc.text(`REPORT_ID: ${t.id}`, 190, 15, { align: 'right' });
+    doc.text(`GENERATED: ${new Date().toLocaleString()}`, 190, 22, { align: 'right' });
+
+    // Section 1: Threat Overview
+    doc.setTextColor(textColor[0], textColor[1], textColor[2]);
+    doc.setFontSize(14);
+    doc.text("1. THREAT INTELLIGENCE SUMMARY", 20, 55);
+    doc.setDrawColor(accentColor[0], accentColor[1], accentColor[2]);
+    doc.setLineWidth(0.5);
+    doc.line(20, 58, 190, 58);
+
+    doc.setFontSize(10);
+    doc.setFont("helvetica", "bold");
+    doc.text("IDENTIFIER:", 25, 70);
+    doc.text("THREAT TYPE:", 25, 77);
+    doc.text("SEVERITY:", 25, 84);
+    doc.text("TIMESTAMP:", 25, 91);
+    doc.text("CONFIDENCE:", 25, 98);
+    doc.text("DETECTION LINK:", 25, 105);
+
+    doc.setFont("helvetica", "normal");
+    doc.text(t.id || 'N/A', 60, 70);
+    doc.text(t.alert?.threat_type || 'Unknown', 60, 77);
+    doc.text(t.alert?.severity || 'Info', 60, 84);
+    doc.text(t.timestamp || 'N/A', 60, 91);
+    doc.text(`${t.alert?.confidence_score || 0}%`, 60, 98);
+    doc.text(t.raw_source?.toUpperCase() || 'CORE_STREAM', 60, 105);
+
+    // Section 2: Neural Explanation
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(14);
+    doc.text("2. NEURAL ANALYTICS & EXPLANATION", 20, 120);
+    doc.line(20, 123, 190, 123);
+
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(10);
+    const expLines = doc.splitTextToSize(t.explainability || "No neural data available for this incident.", 165);
+    doc.text(expLines, 25, 133);
+
+    let yPos = 133 + (expLines.length * 6) + 15;
+
+    // Section 3: Response Playbook
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(14);
+    doc.text("3. TACTICAL RESPONSE PLAYBOOK", 20, yPos);
+    doc.line(20, yPos + 3, 190, yPos + 3);
+    yPos += 13;
+
+    if (t.playbook && t.playbook.length > 0) {
+      t.playbook.forEach((step, idx) => {
+        doc.setFont("helvetica", "bold");
+        doc.text(`${idx + 1}.`, 25, yPos);
+        doc.setFont("helvetica", "normal");
+        const stepLines = doc.splitTextToSize(step, 155);
+        doc.text(stepLines, 32, yPos);
+        yPos += (stepLines.length * 6) + 2;
+        
+        if (yPos > 270) {
+          doc.addPage();
+          yPos = 30;
+        }
+      });
+    } else {
+      doc.text("Standard isolation protocol recommended. No customized playbook generated.", 25, yPos);
+    }
+
+    // Footer
+    const pageCount = doc.internal.getNumberOfPages();
+    for (let i = 1; i <= pageCount; i++) {
+      doc.setPage(i);
+      doc.setFontSize(8);
+      doc.setTextColor(180, 180, 180);
+      doc.text("CONFIDENTIAL - NEXUS AI SECURITY OPERATIONS CENTER", 105, 287, { align: "center" });
+      doc.text(`Page ${i} of ${pageCount}`, 190, 287, { align: 'right' });
+    }
+
+    doc.save(`NexusAI_Incident_${t.id}.pdf`);
+  };
+
+  return (
+    <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -12 }} style={{ display: 'flex', flexDirection: 'column', gap: 24, paddingBottom: 40 }}>
+      {/* Header with Stats */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8, padding: '0 4px' }}>
+        <div>
+          <h2 style={{ fontFamily: 'Orbitron, sans-serif', fontSize: '1.1rem', fontWeight: 800, color: '#00d4ff', letterSpacing: '0.1em', margin: 0 }}>THREAT REPOSITORY</h2>
+          <p style={{ fontSize: '0.65rem', color: 'rgba(255,255,255,0.3)', marginTop: 6, letterSpacing: '0.05em' }}>ARCHIVE OF NEURAL ANALYSIS & RESPONSE PLAYBOOKS</p>
+        </div>
+        <div style={{ display: 'flex', gap: 12 }}>
+            <div className="glass-card" style={{ padding: '10px 18px', display: 'flex', alignItems: 'center', gap: 10, borderRadius: 12, border: '1px solid rgba(0,255,136,0.1)' }}>
+                <CheckCircle size={14} color="#00ff88" />
+                <div style={{ display: 'flex', flexDirection: 'column' }}>
+                  <span style={{ fontSize: '0.8rem', color: '#fff', fontWeight: 800, fontFamily: 'Orbitron, sans-serif' }}>{threats.filter(t => t.alert?.status === 'False Positive').length}</span>
+                  <span style={{ fontSize: '0.45rem', color: 'rgba(0,255,136,0.6)', fontWeight: 700, letterSpacing: '0.1em' }}>SOLVED</span>
+                </div>
+            </div>
+            <div className="glass-card" style={{ padding: '10px 18px', display: 'flex', alignItems: 'center', gap: 10, borderRadius: 12, border: '1px solid rgba(255,59,92,0.1)' }}>
+                <AlertTriangle size={14} color="#ff3b5c" />
+                <div style={{ display: 'flex', flexDirection: 'column' }}>
+                  <span style={{ fontSize: '0.8rem', color: '#fff', fontWeight: 800, fontFamily: 'Orbitron, sans-serif' }}>{threats.filter(t => t.alert?.status === 'Genuine').length}</span>
+                  <span style={{ fontSize: '0.45rem', color: 'rgba(255,59,92,0.6)', fontWeight: 700, letterSpacing: '0.1em' }}>ACTIVE</span>
+                </div>
+            </div>
+        </div>
+      </div>
+
+      {/* List */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+        {threats.length === 0 ? (
+          <div className="glass-card" style={{ padding: 80, textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', borderRadius: 20 }}>
+            <History size={48} color="rgba(0,212,255,0.1)" style={{ marginBottom: 20 }} />
+            <p style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.4)', fontWeight: 500 }}>The neural vault is currently empty.</p>
+            <p style={{ fontSize: '0.65rem', color: 'rgba(255,255,255,0.2)', marginTop: 8 }}>Simulate threats to populate the history.</p>
+          </div>
+        ) : (
+          threats.map((t, i) => (
+            <motion.div 
+              key={t.id || i} 
+              initial={{ opacity: 0, x: -20 }} 
+              animate={{ opacity: 1, x: 0 }} 
+              transition={{ delay: i * 0.05 }}
+              className="glass-card history-row" 
+              style={{ 
+                padding: '24px', 
+                display: 'flex', 
+                alignItems: 'center', 
+                justifyContent: 'space-between', 
+                borderLeft: `4px solid ${t.alert?.status === 'Genuine' ? '#ff3b5c' : '#00ff88'}`, 
+                borderRadius: 16,
+                background: 'rgba(255,255,255,0.01)'
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: 32, minWidth: 0, flex: 1 }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 6, minWidth: 120 }}>
+                  <span style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: '0.55rem', color: 'rgba(255,255,255,0.25)', letterSpacing: '0.1em' }}>{t.id}</span>
+                  <span style={{ fontSize: '0.9rem', fontWeight: 800, color: '#fff', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{t.alert?.threat_type}</span>
+                </div>
+                
+                <div style={{ width: 1, height: 32, background: 'rgba(255,255,255,0.04)', flexShrink: 0 }} />
+                
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 6, flexShrink: 0 }}>
+                  <span style={{ fontSize: '0.5rem', color: 'rgba(255,255,255,0.2)', textTransform: 'uppercase', letterSpacing: '0.15em' }}>Detection Time</span>
+                  <span style={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.6)', display: 'flex', alignItems: 'center', gap: 8, fontWeight: 500 }}><Clock size={12} color="#00d4ff" /> {t.timestamp}</span>
+                </div>
+
+                <div style={{ width: 1, height: 32, background: 'rgba(255,255,255,0.04)', flexShrink: 0 }} />
+
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 6, flexShrink: 0 }}>
+                  <span style={{ fontSize: '0.5rem', color: 'rgba(255,255,255,0.2)', textTransform: 'uppercase', letterSpacing: '0.15em' }}>Certainty</span>
+                  <span style={{ fontSize: '0.75rem', color: '#00d4ff', fontWeight: 800, fontFamily: 'Orbitron, sans-serif' }}>{t.alert?.confidence_score}%</span>
+                </div>
+
+                <div style={{ width: 1, height: 32, background: 'rgba(255,255,255,0.04)', flexShrink: 0 }} />
+                
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 6, flexShrink: 0 }}>
+                  <span style={{ fontSize: '0.5rem', color: 'rgba(255,255,255,0.2)', textTransform: 'uppercase', letterSpacing: '0.15em' }}>System Status</span>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <div style={{ width: 6, height: 6, borderRadius: '50%', background: t.alert?.status === 'Genuine' ? '#ff3b5c' : '#00ff88', boxShadow: `0 0 8px ${t.alert?.status === 'Genuine' ? '#ff3b5c' : '#00ff88'}` }} />
+                    <span style={{ fontSize: '0.65rem', color: t.alert?.status === 'Genuine' ? '#ff3b5c' : '#00ff88', fontWeight: 800, letterSpacing: '0.05em' }}>{t.alert?.status === 'Genuine' ? 'UNRESOLVED' : 'RESOLVED'}</span>
+                  </div>
+                </div>
+              </div>
+
+              <div style={{ marginLeft: 'auto' }}>
+                <button 
+                  onClick={() => generateIncidentPDF(t)}
+                  className="download-btn"
+                  style={{ 
+                    display: 'flex', alignItems: 'center', gap: 10, padding: '10px 24px', borderRadius: 10,
+                    background: 'rgba(0,212,255,0.06)', border: '1px solid rgba(0,212,255,0.15)',
+                    color: '#00d4ff', fontSize: '0.65rem', fontWeight: 700, cursor: 'pointer', transition: 'all 0.3s',
+                    letterSpacing: '0.08em'
+                  }}
+                >
+                  <FileText size={16} /> DOWNLOAD INCIDENT PDF
+                </button>
+              </div>
+            </motion.div>
+          ))
+        )}
       </div>
     </motion.div>
   );

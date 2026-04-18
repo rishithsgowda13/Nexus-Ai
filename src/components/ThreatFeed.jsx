@@ -4,7 +4,7 @@ import { motion } from 'framer-motion';
 
 const sevClass = { Critical: 'badge-critical', High: 'badge-high', Medium: 'badge-high', Low: 'badge-low', Info: 'badge-info' };
 
-export default function ThreatFeed({ threats = [], expanded = false, onSelectThreat, onAgentAction }) {
+export default function ThreatFeed({ threats = [], expanded = false, onSelectThreat }) {
 
   if (threats.length === 0) {
     return (
@@ -102,20 +102,7 @@ export default function ThreatFeed({ threats = [], expanded = false, onSelectThr
                 </span>
                 
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                  {onAgentAction && (
-                    <button 
-                      onClick={(e) => { e.stopPropagation(); onAgentAction(t); }}
-                      style={{
-                        padding: '4px 8px', background: 'rgba(0,212,255,0.1)', border: '1px solid rgba(0,212,255,0.2)',
-                        borderRadius: 4, color: '#00d4ff', fontSize: '0.5rem', fontWeight: 700, 
-                        letterSpacing: '0.05em', cursor: 'pointer', transition: 'all 0.2s'
-                      }}
-                      onMouseEnter={e => { e.target.style.background = 'rgba(0,212,255,0.2)'; e.target.style.borderColor = 'rgba(0,212,255,0.4)'; }}
-                      onMouseLeave={e => { e.target.style.background = 'rgba(0,212,255,0.1)'; e.target.style.borderColor = 'rgba(0,212,255,0.2)'; }}
-                    >
-                      SEND TO AGENT
-                    </button>
-                  )}
+
                   {t.playbook && t.playbook.length > 0 && (
                     <span style={{
                       fontSize: '0.48rem', color: '#00d4ff', fontWeight: 500,

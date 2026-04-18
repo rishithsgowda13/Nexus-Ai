@@ -14,8 +14,8 @@ const AIChat = forwardRef((props, ref) => {
   const scrollRef = useRef(null);
 
   useImperativeHandle(ref, () => ({
-    addMessage: (role, content) => {
-      setMessages(prev => [...prev, { role, content }]);
+    addMessage: (role, content, metadata = {}) => {
+      setMessages(prev => [...prev, { role, content, ...metadata }]);
     }
   }));
 
@@ -98,46 +98,132 @@ const AIChat = forwardRef((props, ref) => {
         {/* Messages */}
         <div ref={scrollRef} style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 20, paddingRight: 8 }}>
           <AnimatePresence initial={false}>
-            {messages.map((msg, i) => (
-              <motion.div key={i} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} style={{ display: 'flex', justifyContent: msg.role === 'user' ? 'flex-end' : 'flex-start' }}>
-                <div style={{ display: 'flex', gap: 12, maxWidth: '80%', flexDirection: msg.role === 'user' ? 'row-reverse' : 'row' }}>
-                  <div style={{
-                    width: 38, height: 38, borderRadius: 10,
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    flexShrink: 0,
-                    background: msg.role === 'user'
-                      ? 'linear-gradient(135deg, #f5c542, #b08d26)'
-                      : 'rgba(255,255,255,0.02)',
-                    border: msg.role === 'user' ? 'none' : '1px solid rgba(255,255,255,0.06)',
-                    boxShadow: msg.role === 'user' ? '0 0 15px rgba(245,197,66,0.2)' : 'none',
-                  }}>
-                    {msg.role === 'user'
-                      ? <User size={16} color="#000" />
-                      : <Sparkles size={16} color="#f5c542" />
-                    }
-                  </div>
-                  <div style={{
-                    padding: '16px 20px', borderRadius: 16,
-                    background: msg.role === 'user'
-                      ? 'rgba(245,197,66,0.04)'
-                      : 'rgba(255,255,255,0.015)',
-                    border: `1px solid ${msg.role === 'user'
-                      ? 'rgba(245,197,66,0.1)'
-                      : 'rgba(255,255,255,0.04)'}`,
-                  }}>
-                    <p style={{
-                      fontSize: msg.role === 'system' ? '0.75rem' : '0.82rem',
-                      lineHeight: 1.8,
-                      color: msg.role === 'user' ? '#fff' : 'rgba(255,255,255,0.65)',
-                      whiteSpace: 'pre-line',
-                      fontFamily: msg.role === 'system' ? 'JetBrains Mono, monospace' : 'inherit',
+            {messages.map((msg, i) => {
+              const isAction = msg.role === 'action';
+              const isUser = msg.role === 'user';
+              
+              if (isAction) {
+                return (
+                  <motion.div 
+                    key={i} 
+                    initial={{ opacity: 0, x: -20 }} 
+                    animate={{ opacity: 1, x: 0 }} 
+                    style={{ marginBottom: 8 }}
+                  >
+                      <div style={{
+                        padding: '24px',
+                        background: 'rgba(20,20,20,0.4)',
+                        backgroundImage: `
+                          linear-gradient(rgba(245, 197, 66, 0.03) 1px, transparent 1px),
+                          linear-gradient(90deg, rgba(245, 197, 66, 0.03) 1px, transparent 1px)
+                        `,
+                        backgroundSize: '20px 20px',
+                        border: '1px solid rgba(245,197,66,0.2)',
+                        borderRadius: 12,
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: 16,
+                        position: 'relative',
+                        overflow: 'hidden',
+                        boxShadow: '0 8px 32px rgba(0,0,0,0.4)'
+                      }}>
+                        <div style={{
+                          position: 'absolute', top: 0, left: 0, width: 4, height: '100%',
+                          background: '#f5c542', boxShadow: '0 0 15px rgba(245,197,66,0.6)'
+                        }} />
+                        {/* Scanner Effect */}
+                        <motion.div 
+                          animate={{ y: [0, 100, 0] }}
+                          transition={{ duration: 4, repeat: Infinity, ease: 'linear' }}
+                          style={{
+                            position: 'absolute', top: 0, left: 4, right: 0, height: '40px',
+                            background: 'linear-gradient(to bottom, transparent, rgba(245,197,66,0.05), transparent)',
+                            pointerEvents: 'none'
+                          }}
+                        />
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                          <div style={{ 
+                            width: 36, height: 36, borderRadius: 10, background: 'rgba(245,197,66,0.12)',
+                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                            border: '1px solid rgba(245,197,66,0.2)'
+                          }}>
+                            <Sparkles size={18} color="#f5c542" />
+                          </div>
+                          <div>
+                            <span style={{ 
+                              fontSize: '0.65rem', fontWeight: 800, color: '#f5c542', 
+                              letterSpacing: '0.18em', textTransform: 'uppercase',
+                              fontFamily: 'Orbitron, sans-serif', display: 'block'
+                            }}>
+                              {msg.actionType || 'Tactical Intelligence'}
+                            </span>
+                            <span style={{ fontSize: '0.5rem', color: 'rgba(255,255,255,0.3)', letterSpacing: '0.1em' }}>NEURAL LINK: VERIFIED RESPONSE</span>
+                          </div>
+                        </div>
+                        <p style={{
+                          fontSize: '0.78rem',
+                          lineHeight: 1.7,
+                          color: '#fff',
+                          whiteSpace: 'pre-line',
+                          fontFamily: 'JetBrains Mono, monospace',
+                          margin: 0,
+                          padding: '0 4px',
+                          textShadow: '0 0 10px rgba(0,0,0,0.5)'
+                        }}>
+                          {msg.content}
+                        </p>
+                      </div>
+                  </motion.div>
+                );
+              }
+
+              return (
+                <motion.div 
+                  key={i} 
+                  initial={{ opacity: 0, y: 8 }} 
+                  animate={{ opacity: 1, y: 0 }} 
+                  style={{ display: 'flex', justifyContent: isUser ? 'flex-end' : 'flex-start' }}
+                >
+                  <div style={{ display: 'flex', gap: 12, maxWidth: '85%', flexDirection: isUser ? 'row-reverse' : 'row' }}>
+                    <div style={{
+                      width: 38, height: 38, borderRadius: 10,
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      flexShrink: 0,
+                      background: isUser
+                        ? 'linear-gradient(135deg, #f5c542, #b08d26)'
+                        : 'rgba(255,255,255,0.02)',
+                      border: isUser ? 'none' : '1px solid rgba(255,255,255,0.06)',
+                      boxShadow: isUser ? '0 0 15px rgba(245,197,66,0.2)' : 'none',
                     }}>
-                      {msg.content}
-                    </p>
+                      {isUser
+                        ? <User size={16} color="#000" />
+                        : <Bot size={16} color="#f5c542" />
+                      }
+                    </div>
+                    <div style={{
+                      padding: '16px 20px', borderRadius: 16,
+                      background: isUser
+                        ? 'rgba(245,197,66,0.04)'
+                        : 'rgba(255,255,255,0.015)',
+                      border: `1px solid ${isUser
+                        ? 'rgba(245,197,66,0.1)'
+                        : 'rgba(255,255,255,0.04)'}`,
+                    }}>
+                      <p style={{
+                        fontSize: isUser ? '0.82rem' : '0.8rem',
+                        lineHeight: 1.8,
+                        color: isUser ? '#fff' : 'rgba(255,255,255,0.65)',
+                        whiteSpace: 'pre-line',
+                        fontFamily: !isUser ? 'JetBrains Mono, monospace' : 'inherit',
+                        margin: 0
+                      }}>
+                        {msg.content}
+                      </p>
+                    </div>
                   </div>
-                </div>
-              </motion.div>
-            ))}
+                </motion.div>
+              );
+            })}
             {isTyping && (
               <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} style={{ display: 'flex', gap: 12 }}>
                 <div style={{

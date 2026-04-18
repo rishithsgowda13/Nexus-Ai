@@ -32,7 +32,7 @@ app = FastAPI(title="NEXUS.AI Core API", version="2.0")
 # Allow Next.js frontend to call
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000", "http://localhost:3001"],
+    allow_origins=["*"],
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -237,6 +237,19 @@ async def ingest_event(req: IngestRequest):
 
     # Layer 2: ML Classification
     prediction = detector.classify(normalized)
+    
+    # Map exact Hackit Threat signatures to Dashboard UI names
+    sig_map = {
+        "SSH_AUTH_FAIL_BURST": "BRUTE FORCE",
+        "PASS_THE_HASH": "LATERAL MOVEMENT",
+        "LARGE_DATA_OUTBOUND": "DATA EXFILTRATION",
+        "C2_HEARTBEAT_PATTERN": "C2 BEACONING",
+        "NMAP_SCAN_FULL": "PORT SCAN",
+        "SQL_UNION_SELECT": "SQL INJECTION"
+    }
+    hackit_sig = raw.get("sig")
+    if hackit_sig in sig_map:
+        prediction["threat_class"] = sig_map[hackit_sig]
 
     # Layer 3: Correlation
     correlated = correlator.correlate(prediction, normalized)

@@ -54,10 +54,10 @@ def init_mock_data():
     
     # We'll use a subset of SAMPLE_LOGS to populate the dashboard immediately
     for i, log in enumerate([
-        {"src": "45.33.32.156", "dst": "10.0.0.12", "proto": "TCP", "sig": "CVE-2021-44228", "message": "JNDI lookup attempt in User-Agent header", "fmt": "syslog"},
-        {"src": "185.25.50.12", "dst": "10.0.0.5", "proto": "TCP", "sig": "EternalBlue", "message": "SMBv1 exploit attempt (WannaCry variant)", "fmt": "cef"},
-        {"host": "SolarWinds-Orion-01", "sig": "SUNBURST", "message": "Unexpected outbound connection to avsvmcloud.com (SUNBURST)", "fmt": "syslog"},
-        {"src": "203.0.113.88", "dst": "DC-01", "proto": "LDAP", "sig": "GoldenTicket", "message": "Kerberos ticket-granting ticket (TGT) forged", "fmt": "syslog"},
+        {"src": "45.33.32.156", "dst": "10.0.0.12", "proto": "TCP", "sig": "CVE-2021-44228", "message": "JNDI lookup attempt in User-Agent header", "fmt": "syslog", "lat": 40.7128, "lon": -74.0060}, # NYC
+        {"src": "185.25.50.12", "dst": "10.0.0.5", "proto": "TCP", "sig": "EternalBlue", "message": "SMBv1 exploit attempt (WannaCry variant)", "fmt": "cef", "lat": 51.5074, "lon": -0.1278}, # London
+        {"host": "SolarWinds-Orion-01", "sig": "SUNBURST", "message": "Unexpected outbound connection to avsvmcloud.com (SUNBURST)", "fmt": "syslog", "lat": 35.6762, "lon": 139.6503}, # Tokyo
+        {"src": "203.0.113.88", "dst": "DC-01", "proto": "LDAP", "sig": "GoldenTicket", "message": "Kerberos ticket-granting ticket (TGT) forged", "fmt": "syslog", "lat": 55.7558, "lon": 37.6173}, # Moscow
     ]):
         raw = dict(log)
         fmt = raw.pop("fmt")
@@ -87,13 +87,13 @@ init_mock_data()
 # ─── Simulated log sources for demo ───
 # ─── Simulated real-world log sources for demo ───
 SAMPLE_LOGS = [
-    {"src": "45.33.32.156", "dst": "10.0.0.12", "proto": "TCP", "sig": "CVE-2021-44228", "message": "JNDI lookup attempt in User-Agent header", "fmt": "syslog"},
-    {"src": "185.25.50.12", "dst": "10.0.0.5", "proto": "TCP", "sig": "EternalBlue", "message": "SMBv1 exploit attempt (WannaCry variant)", "fmt": "cef"},
-    {"host": "SolarWinds-Orion-01", "sig": "SUNBURST", "message": "Unexpected outbound connection to avsvmcloud.com (SUNBURST)", "fmt": "syslog"},
-    {"src": "103.45.12.99", "dst": "10.0.0.22", "proto": "HTTPS", "sig": "Emotet", "message": "C2 heartbeat detected - cobalt strike beacon", "fmt": "netflow"},
-    {"src": "203.0.113.88", "dst": "DC-01", "proto": "LDAP", "sig": "GoldenTicket", "message": "Kerberos ticket-granting ticket (TGT) forged", "fmt": "syslog"},
-    {"src": "194.168.1.10", "dst": "10.0.0.1", "proto": "TCP", "sig": "NotPetya", "message": "Lateral movement via PSEXEC/SMB", "fmt": "cef"},
-    {"host": "Ubuntu-Web-02", "sig": "CVE-2017-5638", "message": "Remote Code Execution (RCE) attempt via Struts2 (CVE-2017-5638)", "fmt": "syslog"},
+    {"src": "45.33.32.156", "dst": "10.0.0.12", "proto": "TCP", "sig": "CVE-2021-44228", "message": "JNDI lookup attempt in User-Agent header", "fmt": "syslog", "lat": 40.7128, "lon": -74.0060}, # NYC
+    {"src": "185.25.50.12", "dst": "10.0.0.5", "proto": "TCP", "sig": "EternalBlue", "message": "SMBv1 exploit attempt (WannaCry variant)", "fmt": "cef", "lat": 51.5074, "lon": -0.1278}, # London
+    {"host": "SolarWinds-Orion-01", "sig": "SUNBURST", "message": "Unexpected outbound connection to avsvmcloud.com (SUNBURST)", "fmt": "syslog", "lat": 35.6762, "lon": 139.6503}, # Tokyo
+    {"src": "103.45.12.99", "dst": "10.0.0.22", "proto": "HTTPS", "sig": "Emotet", "message": "C2 heartbeat detected - cobalt strike beacon", "fmt": "netflow", "lat": 39.9042, "lon": 116.4074}, # Beijing
+    {"src": "203.0.113.88", "dst": "DC-01", "proto": "LDAP", "sig": "GoldenTicket", "message": "Kerberos ticket-granting ticket (TGT) forged", "fmt": "syslog", "lat": 55.7558, "lon": 37.6173}, # Moscow
+    {"src": "194.168.1.10", "dst": "10.0.0.1", "proto": "TCP", "sig": "NotPetya", "message": "Lateral movement via PSEXEC/SMB", "fmt": "cef", "lat": 50.4501, "lon": 30.5234}, # Kyiv
+    {"host": "Ubuntu-Web-02", "sig": "CVE-2017-5638", "message": "Remote Code Execution (RCE) attempt via Struts2 (CVE-2017-5638)", "fmt": "syslog", "lat": -23.5505, "lon": -46.6333}, # Sao Paulo
 ]
 
 

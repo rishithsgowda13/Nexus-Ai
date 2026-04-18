@@ -29,7 +29,7 @@ export default function ThreatFeed({ threats = [], expanded = false, onSelectThr
   }
 
   return (
-    <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 10 }}>
+    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 10 }}>
       {threats.map((t, i) => {
         const alert = t.alert || {};
         const sev = alert.severity || 'Info';

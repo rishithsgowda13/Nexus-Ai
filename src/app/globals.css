@@ -1,4 +1,5 @@
 @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700;800;900&family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@300;400;500;600;700&display=swap');
+@import "leaflet/dist/leaflet.css";
 
 :root {
   --accent: #f5c542;
@@ -712,4 +713,18 @@ body::before {
 
 .selected-threat-border .threat-row:hover {
   opacity: 1;
+}
+
+@keyframes dash {
+  to {
+    stroke-dashoffset: -40;
+  }
+}
+
+.attack-line-animation {
+  animation: dash 2s linear infinite !important;
+}
+
+.map-tiles-grayscale {
+  filter: grayscale(100%) invert(100%) contrast(90%) opacity(0.3) !important;
 }

@@ -40,5 +40,7 @@ class CorrelationEngine:
             "confidence_score": round(final_confidence, 2),
             "severity": severity,
             "status": "Genuine" if final_confidence > 50 else "False Positive",
-            "cross_layer_match": "Linked: Network -> Endpoint Process" if final_confidence > 80 else "Uncorrelated"
+            "cross_layer_match": "Linked: Network -> Endpoint Process" if final_confidence > 80 else "Uncorrelated",
+            "lat": event.get("lat"),
+            "lon": event.get("lon")
         }

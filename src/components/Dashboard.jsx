@@ -5,12 +5,13 @@ import {
   Shield, AlertTriangle, Activity, MessageSquare, History, LogOut, 
   Search, Bell, Zap, CheckCircle, XCircle, Layers, Play, RefreshCw,
   ChevronRight, Hexagon, Radio, FileText, Download, Clock,
-  Terminal, Cpu, CpuIcon, X, Check, ArrowRight
+  Terminal, Cpu, CpuIcon, X, Check, ArrowRight, Globe
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import ThreatFeed from './ThreatFeed';
 import AIChat from './AIChat';
 import ThreatStats from './ThreatStats';
+import GlobalMap from './GlobalMap';
 import { supabase } from '../lib/supabase';
 
 const API = "http://localhost:8000";
@@ -122,6 +123,7 @@ const menuItems = [
   { id: 'overview', icon: Activity, label: 'Overview' },
   { id: 'threats', icon: Shield, label: 'Intelligence' },
   { id: 'nexus-ai', icon: MessageSquare, label: 'Nexus AI' },
+  { id: 'map', icon: Globe, label: 'Cyber Map' },
   { id: 'history', icon: History, label: 'History' },
 ];
 
@@ -573,6 +575,7 @@ export default function Dashboard({ user, onLogout }) {
                 {activeTab === 'overview' && <OverviewTab key="ov" stats={stats} threats={threats} isIntelligence={false} selectedThreat={selectedThreat} setSelectedThreat={setSelectedThreat} />}
                 {activeTab === 'threats' && <IntelligenceTab key="th" threats={threats} onNavigate={setActiveTab} onSendToAgent={setSelectedThreat} selectedThreat={selectedThreat} />}
                 {activeTab === 'nexus-ai' && <NexusAITab key="ai" threats={threats} selectedThreat={selectedThreat} onSelectThreat={setSelectedThreat} />}
+                {activeTab === 'map' && <GlobalMapTab key="map" threats={threats} />}
                 {activeTab === 'history' && <HistoryTab threats={threats} />}
               </>
             )}
@@ -708,7 +711,9 @@ function OverviewTab({ stats, threats, isIntelligence, selectedThreat, setSelect
                 }} />
               </div>
           </div>
-          <ThreatFeed threats={threats} onSelectThreat={setSelectedThreat} selectedId={selectedThreat?.id} expanded={false} />
+          <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column' }}>
+            <ThreatFeed threats={threats} onSelectThreat={setSelectedThreat} selectedId={selectedThreat?.id} expanded={false} />
+          </div>
         </div>
         <div className="glass-card" style={{ padding: 28, display: 'flex', flexDirection: 'column', minHeight: 600 }}>
           <div style={{ marginBottom: 24, paddingBottom: 16, borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
@@ -978,7 +983,7 @@ function IntelligenceTab({ threats, onNavigate, onSendToAgent, selectedThreat })
             }}>Critial / Major Threats</span>
           </div>
         </div>
-        <div style={{ flex: 1, overflowY: 'hidden', display: 'flex', flexDirection: 'column' }}>
+        <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column' }}>
            <ThreatFeed threats={majorThreats} onSelectThreat={handleAgentPush} selectedId={selectedThreat?.id} expanded={false} />
         </div>
       </div>
@@ -1026,7 +1031,7 @@ function IntelligenceTab({ threats, onNavigate, onSendToAgent, selectedThreat })
             }} />
           </div>
         </div>
-        <div style={{ flex: 1, overflowY: 'hidden', display: 'flex', flexDirection: 'column' }}>
+        <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column' }}>
            <ThreatFeed threats={threats} expanded={false} selectedId={selectedThreat?.id} />
         </div>
       </div>
@@ -1282,6 +1287,19 @@ function HistoryTab({ threats }) {
           ))
         )}
       </div>
+    </motion.div>
+  );
+}
+
+function GlobalMapTab({ threats }) {
+  return (
+    <motion.div 
+      initial={{ opacity: 0, y: 12 }} 
+      animate={{ opacity: 1, y: 0 }} 
+      exit={{ opacity: 0, y: -12 }}
+      style={{ height: 'calc(100vh - 120px)', minHeight: 600 }}
+    >
+      <GlobalMap threats={threats} />
     </motion.div>
   );
 }

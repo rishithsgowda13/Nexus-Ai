@@ -40,7 +40,7 @@ class IngestionPipeline:
             })
         elif fmt == "syslog":
             normalized.update({
-                "source_ip": raw_data.get("host"),
+                "source_ip": raw_data.get("host") or raw_data.get("src"),
                 "event_type": "system_log",
                 "payload_info": {"msg": raw_data.get("message")}
             })

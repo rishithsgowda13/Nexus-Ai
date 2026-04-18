@@ -331,6 +331,7 @@ export default function Dashboard({ user, onLogout }) {
             <ThreatInspector 
               threat={selectedThreat} 
               onClose={() => setSelectedThreat(null)} 
+              onExecute={() => setActiveTab('nexus-ai')}
             />
           )}
         </AnimatePresence>
@@ -424,7 +425,7 @@ function OverviewTab({ stats, threats, isIntelligence, selectedThreat, setSelect
   );
 }
 
-function ThreatInspector({ threat, onClose }) {
+function ThreatInspector({ threat, onClose, onExecute }) {
   const isGenuine = threat.alert?.status === 'Genuine';
   const severity = threat.alert?.severity || 'LOW';
 
@@ -574,25 +575,28 @@ function ThreatInspector({ threat, onClose }) {
               ))}
             </div>
 
-            <button style={{
-              width: '100%',
-              padding: '20px',
-              borderRadius: 16,
-              background: '#00ff88',
-              border: 'none',
-              color: '#000',
-              fontWeight: 800,
-              fontSize: '0.75rem',
-              fontFamily: 'Orbitron, sans-serif',
-              letterSpacing: '0.1em',
-              textTransform: 'uppercase',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: 12,
-              boxShadow: '0 0 30px rgba(0,255,136,0.2)'
-            }}>
+            <button 
+              onClick={onExecute}
+              style={{
+                width: '100%',
+                padding: '20px',
+                borderRadius: 16,
+                background: '#00ff88',
+                border: 'none',
+                color: '#000',
+                fontWeight: 800,
+                fontSize: '0.75rem',
+                fontFamily: 'Orbitron, sans-serif',
+                letterSpacing: '0.1em',
+                textTransform: 'uppercase',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: 12,
+                boxShadow: '0 0 30px rgba(0,255,136,0.2)'
+              }}
+            >
               <CheckCircle size={18} /> Execute All Measures
             </button>
           </div>
@@ -870,15 +874,6 @@ function NexusAITab({ threats, selectedThreat, onSelectThreat }) {
             disabled={!selectedThreat} 
             onClick={simulatePlaybook}
           />
-          <ActionButton 
-            icon={XCircle} 
-            label="ISOLATE NODE" 
-            color="#ff3b5c" 
-            disabled={!selectedThreat} 
-            onClick={() => {
-              if (chatRef.current) chatRef.current.addMessage('action', `ISOLATING NODE: ${selectedThreat?.alert?.source}...\n\nStatus: NODE DISCONNECTED FROM NEURAL LINK`, { actionType: 'Node Isolation' });
-            }}
-          />
 
         </div>
         <div style={{ padding: '8px 16px', background: 'rgba(245,197,66,0.05)', border: '1px solid rgba(245,197,66,0.1)', borderRadius: 8 }}>
@@ -1086,7 +1081,7 @@ function HistoryTab({ threats }) {
                     letterSpacing: '0.08em'
                   }}
                 >
-                  <FileText size={16} /> DOWNLOAD INCIDENT PDF
+                  <FileText size={16} /> DOWNLOAD INCIDENT REPORT
                 </button>
               </div>
             </motion.div>

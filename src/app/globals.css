@@ -700,3 +700,16 @@ body::before {
     border-radius: 12px;
   }
 }
+/* =================== SELECTED THREAT HIGHLIGHT =================== */
+.selected-threat-border {
+  border: 1px solid var(--accent) !important;
+  box-shadow: 0 0 20px rgba(245, 197, 66, 0.1);
+}
+
+.selected-threat-border .threat-row {
+  opacity: 0.6;
+}
+
+.selected-threat-border .threat-row:hover {
+  opacity: 1;
+}

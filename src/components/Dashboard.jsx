@@ -325,53 +325,8 @@ export default function Dashboard({ user, onLogout }) {
             ) : (
               <>
                 {activeTab === 'overview' && <OverviewTab key="ov" stats={stats} threats={threats} isIntelligence={false} />}
-                {activeTab === 'threats' && <OverviewTab key="th" stats={stats} threats={threats} isIntelligence={true} />}
-                {activeTab === 'nexus-ai' && (
-                  <motion.div 
-                    key="ai" 
-                    initial={{ opacity: 0, y: 20 }} 
-                    animate={{ opacity: 1, y: 0 }} 
-                    exit={{ opacity: 0, y: -20 }} 
-                    style={{ height: 'calc(100vh - 160px)', display: 'flex', flexDirection: 'column', gap: 24 }}
-                  >
-                    {/* Upper Intelligence Sector */}
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24, flex: 1, minHeight: 0 }}>
-                      <div className="glass-card" style={{ display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-                        <div style={{ padding: '16px 20px', borderBottom: '1px solid rgba(255,255,255,0.05)', display: 'flex', alignItems: 'center', gap: 10 }}>
-                          <Radio size={14} className="pulse-text" style={{ color: 'var(--accent)' }} />
-                          <h3 style={{ fontSize: '0.75rem', fontWeight: 800, margin: 0, letterSpacing: '0.1em', color: 'var(--accent)' }}>LIVE NEURAL STREAM</h3>
-                        </div>
-                        <div style={{ flex: 1, overflowY: 'auto', padding: 20 }}>
-                          <ThreatFeed threats={threats} expanded={true} />
-                        </div>
-                      </div>
-                      
-                      <div className="glass-card" style={{ display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-                        <div style={{ padding: '16px 20px', borderBottom: '1px solid rgba(255,255,255,0.05)', display: 'flex', alignItems: 'center', gap: 10 }}>
-                          <MessageSquare size={14} style={{ color: 'var(--accent)' }} />
-                          <h3 style={{ fontSize: '0.75rem', fontWeight: 800, margin: 0, letterSpacing: '0.1em', color: 'var(--accent)' }}>NEXUS AI ANALYST</h3>
-                        </div>
-                        <div style={{ flex: 1, overflow: 'hidden' }}>
-                          <AIChat />
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Tactical Action Deck */}
-                    <div className="glass-card" style={{ padding: '16px 24px', display: 'flex', alignItems: 'center', gap: 16 }}>
-                      <span style={{ fontSize: '0.65rem', fontWeight: 800, color: 'rgba(255,255,255,0.25)', letterSpacing: '0.2em' }}>TACTICAL ACTIONS:</span>
-                      <div style={{ display: 'flex', gap: 12, flex: 1 }}>
-                        <ActionButton icon={Shield} label="DEFEND SYSTEM" color="#f5c542" />
-                        <ActionButton icon={Play} label="EXPLAIN THREAT" color="#ffa600" />
-                        <ActionButton icon={XCircle} label="ISOLATE NODE" color="#ff3b5c" />
-                        <ActionButton icon={Zap} label="NEUTRALIZE" color="#ff8400" />
-                      </div>
-                      <div style={{ padding: '8px 16px', background: 'rgba(245,197,66,0.05)', border: '1px solid rgba(245,197,66,0.1)', borderRadius: 8 }}>
-                         <span className="pulse-text" style={{ fontSize: '0.6rem', fontWeight: 700, color: 'var(--accent)', letterSpacing: '0.1em' }}>NEURAL LINK: ENCRYPTED</span>
-                      </div>
-                    </div>
-                  </motion.div>
-                )}
+                {activeTab === 'threats' && <IntelligenceTab key="th" threats={threats} onNavigate={setActiveTab} />}
+                {activeTab === 'nexus-ai' && <NexusAITab key="ai" threats={threats} />}
                 {activeTab === 'settings' && (
                   <motion.div key="st" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} style={{
                     display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', gap: 16,
@@ -514,22 +469,293 @@ function OverviewTab({ stats, threats, isIntelligence }) {
   );
 }
 
-function ActionButton({ icon: Icon, label, color }) {
+function ActionButton({ icon: Icon, label, color, onClick, disabled }) {
   return (
-    <button className="glass-card" style={{
-      display: 'flex', alignItems: 'center', gap: 8,
-      padding: '8px 16px', borderRadius: 8,
-      border: `1px solid ${color}22`,
-      background: 'rgba(255,255,255,0.02)',
-      cursor: 'pointer',
-      transition: 'all 0.3s',
-    }}
-    onMouseEnter={e => { e.currentTarget.style.background = `${color}11`; e.currentTarget.style.borderColor = `${color}44`; }}
-    onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.02)'; e.currentTarget.style.borderColor = `${color}22`; }}
+    <button 
+      className="glass-card" 
+      onClick={onClick}
+      disabled={disabled}
+      style={{
+        display: 'flex', alignItems: 'center', gap: 8,
+        padding: '8px 16px', borderRadius: 8,
+        border: `1px solid ${disabled ? 'rgba(255,255,255,0.05)' : color + '22'}`,
+        background: 'rgba(255,255,255,0.02)',
+        cursor: disabled ? 'not-allowed' : 'pointer',
+        transition: 'all 0.3s',
+        opacity: disabled ? 0.4 : 1,
+      }}
+      onMouseEnter={e => { if (!disabled) { e.currentTarget.style.background = `${color}11`; e.currentTarget.style.borderColor = `${color}44`; } }}
+      onMouseLeave={e => { if (!disabled) { e.currentTarget.style.background = 'rgba(255,255,255,0.02)'; e.currentTarget.style.borderColor = `${color}22`; } }}
     >
-      <Icon size={14} color={color} />
-      <span style={{ fontSize: '0.6rem', fontWeight: 700, color: 'rgba(255,255,255,0.7)', letterSpacing: '0.05em' }}>{label}</span>
+      <Icon size={14} color={disabled ? 'rgba(255,255,255,0.2)' : color} />
+      <span style={{ fontSize: '0.6rem', fontWeight: 700, color: disabled ? 'rgba(255,255,255,0.3)' : 'rgba(255,255,255,0.7)', letterSpacing: '0.05em' }}>{label}</span>
     </button>
   );
 }
 
+function IntelligenceTab({ threats, onNavigate }) {
+  const majorThreats = (threats || []).filter(t => t.alert?.status === 'Genuine');
+  const [leftWidth, setLeftWidth] = useState(33.33);
+
+  const startResizing = (e) => {
+    e.preventDefault();
+    const startWidth = leftWidth;
+    const startX = e.clientX;
+
+    const onMouseMove = (moveEvent) => {
+      const deltaX = moveEvent.clientX - startX;
+      const containerWidth = window.innerWidth - 352;
+      const deltaPercent = (deltaX / containerWidth) * 100;
+      let newWidth = startWidth + deltaPercent;
+      if (newWidth < 20) newWidth = 20;
+      if (newWidth > 80) newWidth = 80;
+      setLeftWidth(newWidth);
+    };
+
+    const onMouseUp = () => {
+      document.removeEventListener('mousemove', onMouseMove);
+      document.removeEventListener('mouseup', onMouseUp);
+      document.body.style.cursor = 'default';
+    };
+
+    document.addEventListener('mousemove', onMouseMove);
+    document.addEventListener('mouseup', onMouseUp);
+    document.body.style.cursor = 'col-resize';
+  };
+
+  return (
+    <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -12 }} style={{ display: 'flex', height: '100%' }}>
+      {/* LEFT COLUMN: MAJOR THREATS */}
+      <div className="glass-card" style={{ width: `calc(${leftWidth}% - 12px)`, padding: 28, display: 'flex', flexDirection: 'column', minHeight: 500, overflow: 'hidden' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24, paddingBottom: 16, borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            <AlertTriangle size={16} color="#ff3b5c" />
+            <span style={{
+              fontSize: '0.65rem', fontWeight: 700,
+              color: '#ff3b5c', letterSpacing: '0.15em', textTransform: 'uppercase',
+              fontFamily: 'Orbitron, sans-serif',
+            }}>Critial / Major Threats</span>
+          </div>
+        </div>
+        <div style={{ flex: 1, overflowY: 'hidden', display: 'flex', flexDirection: 'column' }}>
+           <ThreatFeed threats={majorThreats} onSelectThreat={() => onNavigate('nexus-ai')} expanded={false} />
+        </div>
+      </div>
+      
+      {/* RESIZER */}
+      <div 
+        onMouseDown={startResizing}
+        style={{ 
+          width: 24, 
+          cursor: 'col-resize', 
+          display: 'flex', 
+          alignItems: 'center', 
+          justifyContent: 'center',
+          flexShrink: 0,
+          zIndex: 10
+        }}
+      >
+        <div style={{ 
+          width: 4, height: 32, 
+          background: 'rgba(255,255,255,0.1)', 
+          borderRadius: 2, transition: 'background 0.3s' 
+        }} 
+        onMouseEnter={e => e.target.style.background = 'rgba(255,255,255,0.4)'}
+        onMouseLeave={e => e.target.style.background = 'rgba(255,255,255,0.1)'}
+        />
+      </div>
+
+      {/* RIGHT COLUMN: ALL THREATS AND RESOLUTIONS */}
+      <div className="glass-card" style={{ flex: 1, padding: 28, display: 'flex', flexDirection: 'column', minHeight: 500, overflow: 'hidden', minWidth: 0 }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24, paddingBottom: 16, borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            <Zap size={16} color="#00d4ff" />
+            <span style={{
+              fontSize: '0.65rem', fontWeight: 700,
+              color: '#00d4ff', letterSpacing: '0.15em', textTransform: 'uppercase',
+              fontFamily: 'Orbitron, sans-serif',
+            }}>All Incoming Real-Time Threats</span>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <span style={{
+              fontSize: '0.55rem', fontWeight: 600,
+              color: '#00ff88', letterSpacing: '0.1em', textTransform: 'uppercase',
+            }}>Auto-Resolving False Positives</span>
+            <div style={{
+              width: 6, height: 6, borderRadius: '50%',
+              background: '#00ff88', boxShadow: '0 0 8px #00ff88, 0 0 16px rgba(0, 255, 136, 0.2)',
+            }} />
+          </div>
+        </div>
+        <div style={{ flex: 1, overflowY: 'hidden', display: 'flex', flexDirection: 'column' }}>
+           <ThreatFeed threats={threats} expanded={false} />
+        </div>
+      </div>
+    </motion.div>
+  );
+}
+
+function NexusAITab({ threats }) {
+  const [leftWidth, setLeftWidth] = useState(50);
+  const [selectedThreat, setSelectedThreat] = useState(null);
+  const chatRef = useRef(null);
+
+  const startResizing = (e) => {
+    e.preventDefault();
+    const startWidth = leftWidth;
+    const startX = e.clientX;
+
+    const onMouseMove = (moveEvent) => {
+      const deltaX = moveEvent.clientX - startX;
+      const containerWidth = window.innerWidth - 352;
+      const deltaPercent = (deltaX / containerWidth) * 100;
+      let newWidth = startWidth + deltaPercent;
+      if (newWidth < 20) newWidth = 20;
+      if (newWidth > 80) newWidth = 80;
+      setLeftWidth(newWidth);
+    };
+
+    const onMouseUp = () => {
+      document.removeEventListener('mousemove', onMouseMove);
+      document.removeEventListener('mouseup', onMouseUp);
+      document.body.style.cursor = 'default';
+    };
+
+    document.addEventListener('mousemove', onMouseMove);
+    document.addEventListener('mouseup', onMouseUp);
+    document.body.style.cursor = 'col-resize';
+  };
+
+  const explainThreat = () => {
+    if (!selectedThreat || !chatRef.current) return;
+    chatRef.current.addMessage('user', `Explain threat: ${selectedThreat.alert?.threat_type} (${selectedThreat.id})`);
+    chatRef.current.addMessage('system', `ANALYZING THREAT: ${selectedThreat.id}\n\nType: ${selectedThreat.alert?.threat_type}\nSource: ${selectedThreat.alert?.source}\nSeverity: ${selectedThreat.alert?.severity}\nConfidence: ${selectedThreat.alert?.confidence_score}%\n\nEXPLANATION: ${selectedThreat.explainability}\n\nImpact Assessment: High risk to peripheral nodes. Possible lateral movement detected.`);
+  };
+
+  const simulatePlaybook = () => {
+    if (!selectedThreat || !chatRef.current) return;
+    chatRef.current.addMessage('user', `Simulate playbook for ${selectedThreat.id}`);
+    
+    let message = "EXECUTING DEFENSIVE PLAYBOOK SIMULATION...\n\n";
+    if (selectedThreat.playbook && selectedThreat.playbook.length > 0) {
+      selectedThreat.playbook.forEach((step, i) => {
+        message += `STEP ${i + 1}: ${step}\n`;
+      });
+    } else {
+      message += "No automated playbook found for this threat type. Initiating standard isolation protocol.";
+    }
+    chatRef.current.addMessage('system', message);
+  };
+
+  const defendSystem = () => {
+    if (!selectedThreat || !chatRef.current) return;
+    chatRef.current.addMessage('system', `⚠ AUTOMATED DEFENSE TRIGGERED: Attempting to neutralize ${selectedThreat.id}...\n\nAction: Isolate Source IP (${selectedThreat.alert?.source})\nStatus: PENDING USER APPROVAL`);
+    chatRef.current.addMessage('system', `Please confirm: Should I proceed with the neutralization of this threat? (Type 'Approve' or 'Reject')`);
+  };
+
+  return (
+    <motion.div 
+      key="ai" 
+      initial={{ opacity: 0, y: 20 }} 
+      animate={{ opacity: 1, y: 0 }} 
+      exit={{ opacity: 0, y: -20 }} 
+      style={{ height: 'calc(100vh - 160px)', display: 'flex', flexDirection: 'column', gap: 24 }}
+    >
+      {/* Upper Intelligence Sector */}
+      <div style={{ display: 'flex', flex: 1, minHeight: 0 }}>
+        <div className={`glass-card ${selectedThreat ? 'selected-threat-border' : ''}`} style={{ width: `calc(${leftWidth}% - 12px)`, display: 'flex', flexDirection: 'column', overflow: 'hidden', border: selectedThreat ? '1px solid var(--accent)' : '1px solid rgba(255,255,255,0.05)' }}>
+          <div style={{ padding: '16px 20px', borderBottom: '1px solid rgba(255,255,255,0.05)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              <Radio size={14} className="pulse-text" style={{ color: 'var(--accent)' }} />
+              <h3 style={{ fontSize: '0.75rem', fontWeight: 800, margin: 0, letterSpacing: '0.1em', color: 'var(--accent)' }}>LIVE NEURAL STREAM</h3>
+            </div>
+            {selectedThreat && (
+              <button 
+                onClick={() => setSelectedThreat(null)}
+                style={{ background: 'transparent', border: 'none', color: 'rgba(255,255,255,0.3)', cursor: 'pointer', fontSize: '0.6rem' }}
+              >
+                Clear Selection
+              </button>
+            )}
+          </div>
+          <div style={{ flex: 1, overflowY: 'auto', padding: 20 }}>
+            <ThreatFeed threats={threats} expanded={true} onSelectThreat={setSelectedThreat} />
+          </div>
+        </div>
+        
+        {/* RESIZER */}
+        <div 
+          onMouseDown={startResizing}
+          style={{ 
+            width: 24, 
+            cursor: 'col-resize', 
+            display: 'flex', 
+            alignItems: 'center', 
+            justifyContent: 'center',
+            flexShrink: 0,
+            zIndex: 10
+          }}
+        >
+          <div style={{ 
+            width: 4, height: 32, 
+            background: 'rgba(255,255,255,0.1)', 
+            borderRadius: 2, transition: 'background 0.3s' 
+          }} 
+          onMouseEnter={e => e.target.style.background = 'rgba(255,255,255,0.4)'}
+          onMouseLeave={e => e.target.style.background = 'rgba(255,255,255,0.1)'}
+          />
+        </div>
+
+        <div className="glass-card" style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', minWidth: 0 }}>
+          <div style={{ padding: '16px 20px', borderBottom: '1px solid rgba(255,255,255,0.05)', display: 'flex', alignItems: 'center', gap: 10 }}>
+            <MessageSquare size={14} style={{ color: 'var(--accent)' }} />
+            <h3 style={{ fontSize: '0.75rem', fontWeight: 800, margin: 0, letterSpacing: '0.1em', color: 'var(--accent)' }}>NEXUS AI ANALYST</h3>
+          </div>
+          <div style={{ flex: 1, overflow: 'hidden' }}>
+            <AIChat ref={chatRef} />
+          </div>
+        </div>
+      </div>
+
+      {/* Tactical Action Deck */}
+      <div className="glass-card" style={{ padding: '16px 24px', display: 'flex', alignItems: 'center', gap: 16 }}>
+        <span style={{ fontSize: '0.65rem', fontWeight: 800, color: 'rgba(255,255,255,0.25)', letterSpacing: '0.2em' }}>TACTICAL ACTIONS:</span>
+        <div style={{ display: 'flex', gap: 12, flex: 1 }}>
+          <ActionButton 
+            icon={Shield} 
+            label="DEFEND SYSTEM" 
+            color="#f5c542" 
+            disabled={!selectedThreat} 
+            onClick={defendSystem}
+          />
+          <ActionButton 
+            icon={Play} 
+            label="EXPLAIN THREAT" 
+            color="#ffa600" 
+            disabled={!selectedThreat} 
+            onClick={explainThreat}
+          />
+          <ActionButton 
+            icon={Zap} 
+            label="SIMULATE" 
+            color="#ff8400" 
+            disabled={!selectedThreat} 
+            onClick={simulatePlaybook}
+          />
+          <ActionButton 
+            icon={XCircle} 
+            label="ISOLATE NODE" 
+            color="#ff3b5c" 
+            disabled={!selectedThreat} 
+            onClick={() => {
+              if (chatRef.current) chatRef.current.addMessage('system', `ISOLATING NODE: ${selectedThreat?.alert?.source}...`);
+            }}
+          />
+        </div>
+        <div style={{ padding: '8px 16px', background: 'rgba(245,197,66,0.05)', border: '1px solid rgba(245,197,66,0.1)', borderRadius: 8 }}>
+           <span className="pulse-text" style={{ fontSize: '0.6rem', fontWeight: 700, color: 'var(--accent)', letterSpacing: '0.1em' }}>NEURAL LINK: ENCRYPTED</span>
+        </div>
+      </div>
+    </motion.div>
+  );
+}

@@ -71,7 +71,7 @@ export default function ThreatFeed({ threats = [], expanded = false, onSelectThr
                       ML {alert.confidence_score || 0}%
                     </span>
                     <span style={{
-                      fontSize: '0.5rem', color: 'rgba(255,255,255,0.25)',
+                      fontSize: '0.50rem', color: 'rgba(255,255,255,0.25)',
                       background: 'rgba(255,255,255,0.02)',
                       padding: '2px 6px', borderRadius: 4,
                       border: '1px solid rgba(255,255,255,0.04)',
@@ -100,14 +100,31 @@ export default function ThreatFeed({ threats = [], expanded = false, onSelectThr
                 <span className={`badge ${isGenuine ? 'badge-genuine' : 'badge-fp'}`} style={{ padding: '4px 12px' }}>
                   {alert.status}
                 </span>
-                {t.playbook && t.playbook.length > 0 && (
-                  <span style={{
-                    fontSize: '0.48rem', color: '#00d4ff', fontWeight: 500,
-                    letterSpacing: '0.1em', fontFamily: 'JetBrains Mono, monospace',
-                  }}>
-                    {t.playbook.length} STEPS
-                  </span>
-                )}
+                
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                  {onAgentAction && (
+                    <button 
+                      onClick={(e) => { e.stopPropagation(); onAgentAction(t); }}
+                      style={{
+                        padding: '4px 8px', background: 'rgba(0,212,255,0.1)', border: '1px solid rgba(0,212,255,0.2)',
+                        borderRadius: 4, color: '#00d4ff', fontSize: '0.5rem', fontWeight: 700, 
+                        letterSpacing: '0.05em', cursor: 'pointer', transition: 'all 0.2s'
+                      }}
+                      onMouseEnter={e => { e.target.style.background = 'rgba(0,212,255,0.2)'; e.target.style.borderColor = 'rgba(0,212,255,0.4)'; }}
+                      onMouseLeave={e => { e.target.style.background = 'rgba(0,212,255,0.1)'; e.target.style.borderColor = 'rgba(0,212,255,0.2)'; }}
+                    >
+                      SEND TO AGENT
+                    </button>
+                  )}
+                  {t.playbook && t.playbook.length > 0 && (
+                    <span style={{
+                      fontSize: '0.48rem', color: '#00d4ff', fontWeight: 500,
+                      letterSpacing: '0.1em', fontFamily: 'JetBrains Mono, monospace',
+                    }}>
+                      {t.playbook.length} STEPS
+                    </span>
+                  )}
+                </div>
               </div>
             </div>
 

@@ -1,17 +1,23 @@
 "use client";
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, forwardRef, useImperativeHandle } from 'react';
 import { Send, User, Bot, Terminal, Sparkles } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 const API = "http://localhost:8000";
 
-export default function AIChat() {
+const AIChat = forwardRef((props, ref) => {
   const [messages, setMessages] = useState([
     { role: 'system', content: 'NEXUS Neural Link v2.0 initialized. All 4 layers connected to live backend. Try: "layer status", "simulate", "threat summary"' }
   ]);
   const [input, setInput] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const scrollRef = useRef(null);
+
+  useImperativeHandle(ref, () => ({
+    addMessage: (role, content) => {
+      setMessages(prev => [...prev, { role, content }]);
+    }
+  }));
 
   useEffect(() => {
     if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
@@ -203,4 +209,7 @@ export default function AIChat() {
       </form>
     </div>
   );
-}
+});
+
+export default AIChat;
+

@@ -15,6 +15,109 @@ import { supabase } from '../lib/supabase';
 
 const API = "http://localhost:8000";
 
+const generateIncidentPDF = (t) => {
+  if (!t) return;
+  const doc = new jsPDF();
+  
+  // Styling constants
+  const accentColor = [0, 212, 255];
+  const textColor = [20, 20, 20];
+  const subTextColor = [100, 100, 100];
+
+  // Page Header
+  doc.setFillColor(15, 15, 15);
+  doc.rect(0, 0, 210, 40, 'F');
+  
+  doc.setFontSize(24);
+  doc.setTextColor(255, 255, 255);
+  doc.setFont("helvetica", "bold");
+  doc.text("NEXUS.AI", 20, 26);
+  
+  doc.setFontSize(9);
+  doc.setTextColor(accentColor[0], accentColor[1], accentColor[2]);
+  doc.text("INCIDENT FORENSIC DOSSIER", 65, 26);
+
+  doc.setTextColor(150, 150, 150);
+  doc.setFontSize(8);
+  doc.text(`REPORT_ID: ${t.id}`, 190, 15, { align: 'right' });
+  doc.text(`GENERATED: ${new Date().toLocaleString()}`, 190, 22, { align: 'right' });
+
+  // Section 1: Threat Overview
+  doc.setTextColor(textColor[0], textColor[1], textColor[2]);
+  doc.setFontSize(14);
+  doc.text("1. THREAT INTELLIGENCE SUMMARY", 20, 55);
+  doc.setDrawColor(accentColor[0], accentColor[1], accentColor[2]);
+  doc.setLineWidth(0.5);
+  doc.line(20, 58, 190, 58);
+
+  doc.setFontSize(10);
+  doc.setFont("helvetica", "bold");
+  doc.text("IDENTIFIER:", 25, 70);
+  doc.text("THREAT TYPE:", 25, 77);
+  doc.text("SEVERITY:", 25, 84);
+  doc.text("TIMESTAMP:", 25, 91);
+  doc.text("CONFIDENCE:", 25, 98);
+  doc.text("DETECTION LINK:", 25, 105);
+
+  doc.setFont("helvetica", "normal");
+  doc.text(t.id || 'N/A', 60, 70);
+  doc.text(t.alert?.threat_type || 'Unknown', 60, 77);
+  doc.text(t.alert?.severity || 'Info', 60, 84);
+  doc.text(t.timestamp || 'N/A', 60, 91);
+  doc.text(`${t.alert?.confidence_score || 0}%`, 60, 98);
+  doc.text(t.raw_source?.toUpperCase() || 'CORE_STREAM', 60, 105);
+
+  // Section 2: Neural Explanation
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(14);
+  doc.text("2. NEURAL ANALYTICS & EXPLANATION", 20, 120);
+  doc.line(20, 123, 190, 123);
+
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(10);
+  const expLines = doc.splitTextToSize(t.explainability || "No neural data available for this incident.", 165);
+  doc.text(expLines, 25, 133);
+
+  let yPos = 133 + (expLines.length * 6) + 15;
+
+  // Section 3: Response Playbook
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(14);
+  doc.text("3. TACTICAL RESPONSE PLAYBOOK", 20, yPos);
+  doc.line(20, yPos + 3, 190, yPos + 3);
+  yPos += 13;
+
+  if (t.playbook && t.playbook.length > 0) {
+    t.playbook.forEach((step, idx) => {
+      doc.setFont("helvetica", "bold");
+      doc.text(`${idx + 1}.`, 25, yPos);
+      doc.setFont("helvetica", "normal");
+      const stepLines = doc.splitTextToSize(step, 155);
+      doc.text(stepLines, 32, yPos);
+      yPos += (stepLines.length * 6) + 2;
+      
+      if (yPos > 270) {
+        doc.addPage();
+        yPos = 30;
+      }
+    });
+  } else {
+    doc.text("Standard isolation protocol recommended. No customized playbook generated.", 25, yPos);
+  }
+
+  // Footer
+  const pageCount = doc.internal.getNumberOfPages();
+  for (let i = 1; i <= pageCount; i++) {
+    doc.setPage(i);
+    doc.setFontSize(8);
+    doc.setTextColor(180, 180, 180);
+    doc.text("CONFIDENTIAL - NEXUS AI SECURITY OPERATIONS CENTER", 105, 287, { align: "center" });
+    doc.text(`Page ${i} of ${pageCount}`, 190, 287, { align: 'right' });
+  }
+
+  doc.save(`NexusAI_Incident_${t.id}.pdf`);
+};
+
 const menuItems = [
   { id: 'overview', icon: Activity, label: 'Overview' },
   { id: 'threats', icon: Shield, label: 'Intelligence' },
@@ -31,6 +134,10 @@ export default function Dashboard({ user, onLogout }) {
   const [simulating, setSimulating] = useState(false);
   const [loading, setLoading] = useState(true);
   const [selectedThreat, setSelectedThreat] = useState(null);
+  const [notifications, setNotifications] = useState([]);
+  const [showNotifMenu, setShowNotifMenu] = useState(false);
+  const [toasts, setToasts] = useState([]);
+  const lastProcessedIdRef = useRef(null);
 
   useEffect(() => {
     const init = async () => {
@@ -55,6 +162,18 @@ export default function Dashboard({ user, onLogout }) {
     };
   }, []);
 
+  // Reset state and refresh data when switching to forensic-heavy tabs
+  useEffect(() => {
+    if (activeTab === 'overview') {
+      setSelectedThreat(null);
+      fetchStats();
+      fetchThreats();
+      fetchHealth();
+    } else if (activeTab === 'threats' || activeTab === 'history') {
+      setSelectedThreat(null);
+    }
+  }, [activeTab]);
+
   const fetchHealth = async () => {
     try {
       const res = await fetch(`${API}/api/health`);
@@ -73,8 +192,48 @@ export default function Dashboard({ user, onLogout }) {
     try {
       const res = await fetch(`${API}/api/threats`);
       const data = await res.json();
-      setThreats(data.threats || []);
+      const newThreats = data.threats || [];
+      
+      // Notification Logic
+      if (newThreats.length > 0) {
+        if (!lastProcessedIdRef.current) {
+          lastProcessedIdRef.current = newThreats[newThreats.length - 1].id;
+        } else {
+          // Find threats with IDs "greater" than last processed (assuming sequential TX-XXXX)
+          const latest = newThreats.filter(t => t.id > lastProcessedIdRef.current);
+          latest.forEach(t => {
+            if (t.alert?.severity === 'High' || t.alert?.severity === 'Critical') {
+              triggerNotification(t);
+            }
+          });
+          if (latest.length > 0) {
+            lastProcessedIdRef.current = latest[latest.length - 1].id;
+          }
+        }
+      }
+      
+      setThreats(newThreats);
     } catch { setThreats([]); }
+  };
+
+  const triggerNotification = (threat) => {
+    const newNotif = {
+      id: Date.now() + Math.random(),
+      threatId: threat.id,
+      type: threat.alert?.threat_type,
+      severity: threat.alert?.severity,
+      time: threat.timestamp || new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      read: false
+    };
+    
+    setNotifications(prev => [newNotif, ...prev].slice(0, 20));
+    
+    // Add to toasts
+    const toastId = Date.now();
+    setToasts(prev => [...prev, { ...newNotif, id: toastId }]);
+    setTimeout(() => {
+      setToasts(prev => prev.filter(t => t.id !== toastId));
+    }, 5000);
   };
 
   const runSimulation = async () => {
@@ -269,19 +428,114 @@ export default function Dashboard({ user, onLogout }) {
             }}>
               <RefreshCw size={14} />
             </button>
-            <button style={{
-              position: 'relative', padding: 10,
-              border: '1px solid rgba(255,255,255,0.06)',
-              borderRadius: 10, background: 'transparent', cursor: 'pointer',
-            }}>
-              <Bell size={16} color="rgba(255,255,255,0.3)" />
-              {threats.length > 0 && <span style={{
-                position: 'absolute', top: 6, right: 6,
-                width: 6, height: 6, background: '#00d4ff',
-                borderRadius: '50%',
-                boxShadow: '0 0 8px #00d4ff',
-              }} />}
-            </button>
+            <div style={{ position: 'relative' }}>
+              <button 
+                onClick={() => setShowNotifMenu(!showNotifMenu)}
+                style={{
+                  position: 'relative', padding: 10,
+                  border: showNotifMenu ? '1px solid var(--accent)' : '1px solid rgba(255,255,255,0.06)',
+                  borderRadius: 10, background: showNotifMenu ? 'rgba(245,197,66,0.05)' : 'transparent', cursor: 'pointer',
+                  transition: 'all 0.3s'
+                }}
+              >
+                <Bell size={16} color={showNotifMenu ? 'var(--accent)' : "rgba(255,255,255,0.3)"} />
+                {notifications.some(n => !n.read) && <span style={{
+                  position: 'absolute', top: 6, right: 6,
+                  width: 6, height: 6, background: '#ff3b5c',
+                  borderRadius: '50%',
+                  boxShadow: '0 0 8px #ff3b5c',
+                }} />}
+              </button>
+
+              <AnimatePresence>
+                {showNotifMenu && (
+                  <>
+                    <motion.div 
+                      initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+                      onClick={() => setShowNotifMenu(false)}
+                      style={{ position: 'fixed', inset: 0, zIndex: 100 }}
+                    />
+                    <motion.div 
+                      initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                      animate={{ opacity: 1, y: 0, scale: 1 }}
+                      exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                      style={{
+                        position: 'absolute', top: 'calc(100% + 12px)', right: 0,
+                        width: 320, background: '#0f0f0f',
+                        border: '1px solid rgba(255,255,255,0.1)',
+                        borderRadius: 16, padding: '20px 0',
+                        boxShadow: '0 20px 50px rgba(0,0,0,0.8)',
+                        zIndex: 101, overflow: 'hidden'
+                      }}
+                    >
+                      <div style={{ padding: '0 20px 16px', borderBottom: '1px solid rgba(255,255,255,0.05)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                         <span style={{ fontSize: '0.65rem', fontWeight: 800, color: '#fff', letterSpacing: '0.1em' }}>NOTIFICATIONS</span>
+                         <button 
+                          onClick={() => setNotifications(prev => prev.map(n => ({ ...n, read: true })))}
+                          style={{ background: 'transparent', border: 'none', color: 'var(--accent)', fontSize: '0.55rem', fontWeight: 700, cursor: 'pointer' }}
+                         >
+                           MARK ALL READ
+                         </button>
+                      </div>
+                      <div style={{ maxHeight: 310, overflowY: 'auto' }}>
+                        {notifications.length === 0 ? (
+                          <div style={{ padding: '40px 20px', textAlign: 'center' }}>
+                            <Bell size={24} color="rgba(255,255,255,0.05)" style={{ marginBottom: 12 }} />
+                            <p style={{ fontSize: '0.65rem', color: 'rgba(255,255,255,0.2)' }}>No recent alerts</p>
+                          </div>
+                        ) : (
+                          notifications.map(n => (
+                            <div 
+                              key={n.id}
+                              style={{ 
+                                padding: '16px 20px', borderBottom: '1px solid rgba(255,255,255,0.03)',
+                                background: n.read ? 'transparent' : 'rgba(255,255,255,0.02)',
+                                display: 'flex', gap: 14, cursor: 'pointer', transition: 'background 0.3s'
+                              }}
+                              onClick={() => {
+                                const threat = threats.find(t => t.id === n.threatId);
+                                if (threat) {
+                                  setSelectedThreat(threat);
+                                  setActiveTab('nexus-ai');
+                                }
+                                setNotifications(prev => prev.map(item => item.id === n.id ? { ...item, read: true } : item));
+                                setShowNotifMenu(false);
+                              }}
+                              onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.04)'}
+                              onMouseLeave={e => e.currentTarget.style.background = n.read ? 'transparent' : 'rgba(255,255,255,0.02)'}
+                            >
+                              <div style={{ 
+                                width: 32, height: 32, borderRadius: 8, background: `${n.severity === 'Critical' ? '#ff3b5c' : '#f5c542'}15`,
+                                display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+                                border: `1px solid ${n.severity === 'Critical' ? '#ff3b5c' : '#f5c542'}30`
+                              }}>
+                                <Zap size={14} color={n.severity === 'Critical' ? '#ff3b5c' : '#f5c542'} />
+                              </div>
+                              <div style={{ flex: 1, minWidth: 0 }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
+                                  <span style={{ fontSize: '0.5rem', fontWeight: 800, color: n.severity === 'Critical' ? '#ff3b5c' : '#f5c542' }}>{n.severity}</span>
+                                  <span style={{ fontSize: '0.45rem', color: 'rgba(255,255,255,0.2)' }}>{n.time}</span>
+                                </div>
+                                <h4 style={{ fontSize: '0.68rem', fontWeight: 700, color: '#fff', margin: 0, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{n.type}</h4>
+                                <p style={{ fontSize: '0.55rem', color: 'rgba(255,255,255,0.4)', margin: 0 }}>ID: {n.threatId}</p>
+                              </div>
+                            </div>
+                          ))
+                        )}
+                      </div>
+                      <div style={{ padding: 12, borderTop: '1px solid rgba(255,255,255,0.05)', textAlign: 'center' }}>
+                         <button 
+                          onClick={() => { setActiveTab('history'); setShowNotifMenu(false); }}
+                          style={{ background: 'transparent', border: 'none', color: 'rgba(255,255,255,0.3)', fontSize: '0.55rem', fontWeight: 600, cursor: 'pointer', letterSpacing: '0.05em' }}
+                         >
+                           VIEW ALL HISTORY
+                         </button>
+                      </div>
+                    </motion.div>
+                  </>
+                )}
+              </AnimatePresence>
+            </div>
           </div>
         </header>
 
@@ -317,12 +571,58 @@ export default function Dashboard({ user, onLogout }) {
             ) : (
               <>
                 {activeTab === 'overview' && <OverviewTab key="ov" stats={stats} threats={threats} isIntelligence={false} selectedThreat={selectedThreat} setSelectedThreat={setSelectedThreat} />}
-                {activeTab === 'threats' && <IntelligenceTab key="th" threats={threats} onNavigate={setActiveTab} onSendToAgent={setSelectedThreat} />}
+                {activeTab === 'threats' && <IntelligenceTab key="th" threats={threats} onNavigate={setActiveTab} onSendToAgent={setSelectedThreat} selectedThreat={selectedThreat} />}
                 {activeTab === 'nexus-ai' && <NexusAITab key="ai" threats={threats} selectedThreat={selectedThreat} onSelectThreat={setSelectedThreat} />}
                 {activeTab === 'history' && <HistoryTab threats={threats} />}
               </>
             )}
           </AnimatePresence>
+        </div>
+
+        {/* NOTIFICATION TOASTS */}
+        <div style={{ position: 'fixed', top: 100, right: 32, zIndex: 9999, display: 'flex', flexDirection: 'column', gap: 12, pointerEvents: 'none' }}>
+           <AnimatePresence>
+             {toasts.map(t => (
+               <motion.div 
+                 key={t.id}
+                 initial={{ opacity: 0, x: 50, scale: 0.9 }}
+                 animate={{ opacity: 1, x: 0, scale: 1 }}
+                 exit={{ opacity: 0, scale: 0.9, transition: { duration: 0.2 } }}
+                 style={{
+                   width: 320,
+                   background: 'rgba(15,15,15,0.95)',
+                   backdropFilter: 'blur(20px)',
+                   borderLeft: `4px solid ${t.severity === 'Critical' ? '#ff3b5c' : '#f5c542'}`,
+                   borderRight: '1px solid rgba(255,255,255,0.1)',
+                   borderTop: '1px solid rgba(255,255,255,0.1)',
+                   borderBottom: '1px solid rgba(255,255,255,0.1)',
+                   borderRadius: '0 12px 12px 0',
+                   padding: 20,
+                   boxShadow: '0 10px 40px rgba(0,0,0,0.5)',
+                   pointerEvents: 'auto',
+                   display: 'flex', gap: 16, alignItems: 'flex-start'
+                 }}
+               >
+                 <div style={{ 
+                   width: 36, height: 36, borderRadius: 10, background: `${t.severity === 'Critical' ? '#ff3b5c' : '#f5c542'}15`,
+                   display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0
+                 }}>
+                   <AlertTriangle size={18} color={t.severity === 'Critical' ? '#ff3b5c' : '#f5c542'} />
+                 </div>
+                 <div style={{ flex: 1 }}>
+                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
+                     <span style={{ fontSize: '0.55rem', fontWeight: 800, color: t.severity === 'Critical' ? '#ff3b5c' : '#f5c542', letterSpacing: '0.1em' }}>{t.severity} ALERT</span>
+                     <span style={{ fontSize: '0.5rem', color: 'rgba(255,255,255,0.3)', fontFamily: 'JetBrains Mono, monospace' }}>{t.time}</span>
+                   </div>
+                   <h4 style={{ fontSize: '0.75rem', fontWeight: 700, color: '#fff', margin: 0, marginBottom: 4 }}>{t.type}</h4>
+                   <p style={{ fontSize: '0.6rem', color: 'rgba(255,255,255,0.5)', margin: 0 }}>ID: {t.threatId} detected in neural link.</p>
+                 </div>
+                 <button onClick={() => setToasts(prev => prev.filter(toast => toast.id !== t.id))} style={{ background: 'transparent', border: 'none', color: 'rgba(255,255,255,0.2)', cursor: 'pointer', padding: 4 }}>
+                    <X size={14} />
+                 </button>
+               </motion.div>
+             ))}
+           </AnimatePresence>
         </div>
 
         {/* Global Inspector Modal */}
@@ -408,7 +708,7 @@ function OverviewTab({ stats, threats, isIntelligence, selectedThreat, setSelect
                 }} />
               </div>
           </div>
-          <ThreatFeed threats={threats} onSelectThreat={setSelectedThreat} expanded={false} />
+          <ThreatFeed threats={threats} onSelectThreat={setSelectedThreat} selectedId={selectedThreat?.id} expanded={false} />
         </div>
         <div className="glass-card" style={{ padding: 28, display: 'flex', flexDirection: 'column', minHeight: 600 }}>
           <div style={{ marginBottom: 24, paddingBottom: 16, borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
@@ -630,14 +930,14 @@ function ActionButton({ icon: Icon, label, color, onClick, disabled }) {
   );
 }
 
-function IntelligenceTab({ threats, onNavigate, onSendToAgent }) {
+function IntelligenceTab({ threats, onNavigate, onSendToAgent, selectedThreat }) {
   const handleAgentPush = (threat) => {
     onSendToAgent(threat);
     onNavigate('nexus-ai');
   };
 
   const majorThreats = (threats || []).filter(t => t.alert?.status === 'Genuine');
-  const [leftWidth, setLeftWidth] = useState(33.33);
+  const [leftWidth, setLeftWidth] = useState(40);
 
   const startResizing = (e) => {
     e.preventDefault();
@@ -679,7 +979,7 @@ function IntelligenceTab({ threats, onNavigate, onSendToAgent }) {
           </div>
         </div>
         <div style={{ flex: 1, overflowY: 'hidden', display: 'flex', flexDirection: 'column' }}>
-           <ThreatFeed threats={majorThreats} onSelectThreat={handleAgentPush} expanded={false} />
+           <ThreatFeed threats={majorThreats} onSelectThreat={handleAgentPush} selectedId={selectedThreat?.id} expanded={false} />
         </div>
       </div>
       
@@ -727,7 +1027,7 @@ function IntelligenceTab({ threats, onNavigate, onSendToAgent }) {
           </div>
         </div>
         <div style={{ flex: 1, overflowY: 'hidden', display: 'flex', flexDirection: 'column' }}>
-           <ThreatFeed threats={threats} expanded={false} />
+           <ThreatFeed threats={threats} expanded={false} selectedId={selectedThreat?.id} />
         </div>
       </div>
     </motion.div>
@@ -772,15 +1072,11 @@ function NexusAITab({ threats, selectedThreat, onSelectThreat }) {
   const simulatePlaybook = () => {
     if (!selectedThreat || !chatRef.current) return;
     
-    let message = `NEXUS AI DEFENSE PROJECTION FOR ${selectedThreat.id}:\n\n`;
-    if (selectedThreat.playbook && selectedThreat.playbook.length > 0) {
-      selectedThreat.playbook.forEach((step, i) => {
-        message += `STEP ${i + 1}: ${step}\n`;
-      });
-    } else {
-      message += "No automated playbook found for this threat type. Initiating standard isolation protocol.";
-    }
-    chatRef.current.addMessage('action', message, { actionType: 'Defense Simulation' });
+    // Directly generate and download PDF
+    generateIncidentPDF(selectedThreat);
+    
+    // Notify in chat
+    chatRef.current.addMessage('action', `TACTICAL SIMULATION COMPLETE\n\nTarget: ${selectedThreat.id}\nStatus: PDF REPORT GENERATED\n\nSimulation results have been compiled and downloaded successfully.`, { actionType: 'Defense Simulation' });
   };
 
   const defendSystem = () => {
@@ -813,7 +1109,7 @@ function NexusAITab({ threats, selectedThreat, onSelectThreat }) {
             )}
           </div>
           <div style={{ flex: 1, overflowY: 'auto', padding: 20 }}>
-            <ThreatFeed threats={threats} expanded={true} onSelectThreat={onSelectThreat} />
+            <ThreatFeed threats={threats} expanded={true} onSelectThreat={onSelectThreat} selectedId={selectedThreat?.id} />
           </div>
         </div>
         
@@ -885,108 +1181,6 @@ function NexusAITab({ threats, selectedThreat, onSelectThreat }) {
 }
 
 function HistoryTab({ threats }) {
-  const generateIncidentPDF = (t) => {
-    const doc = new jsPDF();
-    
-    // Styling constants
-    const accentColor = [0, 212, 255];
-    const textColor = [20, 20, 20];
-    const subTextColor = [100, 100, 100];
-
-    // Page Header
-    doc.setFillColor(15, 15, 15);
-    doc.rect(0, 0, 210, 40, 'F');
-    
-    doc.setFontSize(24);
-    doc.setTextColor(255, 255, 255);
-    doc.setFont("helvetica", "bold");
-    doc.text("NEXUS.AI", 20, 26);
-    
-    doc.setFontSize(9);
-    doc.setTextColor(accentColor[0], accentColor[1], accentColor[2]);
-    doc.text("INCIDENT FORENSIC DOSSIER", 65, 26);
-
-    doc.setTextColor(150, 150, 150);
-    doc.setFontSize(8);
-    doc.text(`REPORT_ID: ${t.id}`, 190, 15, { align: 'right' });
-    doc.text(`GENERATED: ${new Date().toLocaleString()}`, 190, 22, { align: 'right' });
-
-    // Section 1: Threat Overview
-    doc.setTextColor(textColor[0], textColor[1], textColor[2]);
-    doc.setFontSize(14);
-    doc.text("1. THREAT INTELLIGENCE SUMMARY", 20, 55);
-    doc.setDrawColor(accentColor[0], accentColor[1], accentColor[2]);
-    doc.setLineWidth(0.5);
-    doc.line(20, 58, 190, 58);
-
-    doc.setFontSize(10);
-    doc.setFont("helvetica", "bold");
-    doc.text("IDENTIFIER:", 25, 70);
-    doc.text("THREAT TYPE:", 25, 77);
-    doc.text("SEVERITY:", 25, 84);
-    doc.text("TIMESTAMP:", 25, 91);
-    doc.text("CONFIDENCE:", 25, 98);
-    doc.text("DETECTION LINK:", 25, 105);
-
-    doc.setFont("helvetica", "normal");
-    doc.text(t.id || 'N/A', 60, 70);
-    doc.text(t.alert?.threat_type || 'Unknown', 60, 77);
-    doc.text(t.alert?.severity || 'Info', 60, 84);
-    doc.text(t.timestamp || 'N/A', 60, 91);
-    doc.text(`${t.alert?.confidence_score || 0}%`, 60, 98);
-    doc.text(t.raw_source?.toUpperCase() || 'CORE_STREAM', 60, 105);
-
-    // Section 2: Neural Explanation
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(14);
-    doc.text("2. NEURAL ANALYTICS & EXPLANATION", 20, 120);
-    doc.line(20, 123, 190, 123);
-
-    doc.setFont("helvetica", "normal");
-    doc.setFontSize(10);
-    const expLines = doc.splitTextToSize(t.explainability || "No neural data available for this incident.", 165);
-    doc.text(expLines, 25, 133);
-
-    let yPos = 133 + (expLines.length * 6) + 15;
-
-    // Section 3: Response Playbook
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(14);
-    doc.text("3. TACTICAL RESPONSE PLAYBOOK", 20, yPos);
-    doc.line(20, yPos + 3, 190, yPos + 3);
-    yPos += 13;
-
-    if (t.playbook && t.playbook.length > 0) {
-      t.playbook.forEach((step, idx) => {
-        doc.setFont("helvetica", "bold");
-        doc.text(`${idx + 1}.`, 25, yPos);
-        doc.setFont("helvetica", "normal");
-        const stepLines = doc.splitTextToSize(step, 155);
-        doc.text(stepLines, 32, yPos);
-        yPos += (stepLines.length * 6) + 2;
-        
-        if (yPos > 270) {
-          doc.addPage();
-          yPos = 30;
-        }
-      });
-    } else {
-      doc.text("Standard isolation protocol recommended. No customized playbook generated.", 25, yPos);
-    }
-
-    // Footer
-    const pageCount = doc.internal.getNumberOfPages();
-    for (let i = 1; i <= pageCount; i++) {
-      doc.setPage(i);
-      doc.setFontSize(8);
-      doc.setTextColor(180, 180, 180);
-      doc.text("CONFIDENTIAL - NEXUS AI SECURITY OPERATIONS CENTER", 105, 287, { align: "center" });
-      doc.text(`Page ${i} of ${pageCount}`, 190, 287, { align: 'right' });
-    }
-
-    doc.save(`NexusAI_Incident_${t.id}.pdf`);
-  };
-
   return (
     <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -12 }} style={{ display: 'flex', flexDirection: 'column', gap: 24, paddingBottom: 40 }}>
       {/* Header with Stats */}

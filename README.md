@@ -168,4 +168,3 @@ Nexus AI operates through four distinct stages of refinement:
 *   **Real-time Infrastructure**: Supabase (PostgreSQL + Real-time engine) for alert persistence and synchronization across analyst tabs.
 
 ---
-<p align="center">Built with ⚡ by Antigravity AI</p>

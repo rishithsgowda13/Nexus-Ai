@@ -98,7 +98,7 @@ export default function ThreatFeed({ threats = [], expanded = false, onSelectThr
                       border: sev === 'Critical' ? '1px solid rgba(255,59,92,0.2)' : '1px solid rgba(255,255,255,0.04)',
                       fontWeight: sev === 'Critical' ? 700 : 400
                     }}>
-                      SENSOR: {t.raw_source?.toUpperCase()}
+                      SENSOR: {t.raw_source?.toString().toUpperCase() || 'UNKNOWN'}
                     </span>
                   </div>
                   <p style={{ fontSize: '0.88rem', fontWeight: 700, color: '#fff', marginBottom: 4 }}>{alert.threat_type || 'Unknown'}</p>

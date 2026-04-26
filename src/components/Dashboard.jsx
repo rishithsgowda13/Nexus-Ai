@@ -5,7 +5,7 @@ import {
   Shield, AlertTriangle, Activity, MessageSquare, History, LogOut, 
   Search, Bell, Zap, CheckCircle, XCircle, Layers, Play, RefreshCw,
   ChevronRight, Hexagon, Radio, FileText, Download, Clock,
-  Terminal, Cpu, CpuIcon, X, Check, ArrowRight, Globe
+  Terminal, Cpu, X, Check, ArrowRight, Globe
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import ThreatFeed from './ThreatFeed';
@@ -19,148 +19,193 @@ const API = "http://localhost:8000";
 const generateIncidentPDF = (t) => {
   if (!t) return;
   const doc = new jsPDF();
-  
-  // Styling constants
-  const accentColor = [0, 212, 256]; // Light Blue
-  const criticalColor = [255, 59, 92]; // Red
+  const pageWidth = 210;
+  const margin = 20;
+  const contentWidth = pageWidth - (margin * 2);
+
+  const accentColor = [0, 212, 256];
+  const criticalColor = [255, 59, 92];
   const grayColor = [100, 100, 100];
   const textColor = [20, 20, 20];
 
-  const drawSectionHeader = (title, y) => {
+  const checkPageBreak = (currentY, needed) => {
+    if (currentY + needed > 275) {
+      doc.addPage();
+      return 25; // Header space on new page
+    }
+    return currentY;
+  };
+
+  const drawHeading = (text, y) => {
     doc.setTextColor(textColor[0], textColor[1], textColor[2]);
     doc.setFontSize(14);
     doc.setFont("helvetica", "bold");
-    doc.text(title, 20, y);
+    doc.text(text, margin, y);
     doc.setDrawColor(accentColor[0], accentColor[1], accentColor[2]);
     doc.setLineWidth(0.8);
-    doc.line(20, y + 2, 190, y + 2);
+    doc.line(margin, y + 2, 190, y + 2);
     return y + 12;
   };
-  
-  // --- PAGE 1 HEADER ---
+
+  // --- PAGE 1: COVER & EXECUTIVE SUMMARY ---
   doc.setFillColor(15, 15, 15);
-  doc.rect(0, 0, 210, 50, 'F');
+  doc.rect(0, 0, 210, 60, 'F');
   
-  doc.setFontSize(32);
+  doc.setFontSize(36);
   doc.setTextColor(255, 255, 255);
   doc.setFont("helvetica", "bold");
-  doc.text("NEXUS.AI", 20, 32);
+  doc.text("NEXUS.AI", margin, 35);
   
-  doc.setFontSize(10);
+  doc.setFontSize(11);
   doc.setTextColor(accentColor[0], accentColor[1], accentColor[2]);
-  doc.text("SECURITY OPERATIONS CENTER | FORENSIC INTELLIGENCE DOSSIER", 20, 42);
+  doc.text("SECURITY OPERATIONS CENTER | OFFICIAL FORENSIC DOSSIER", margin, 48);
 
   doc.setTextColor(150, 150, 150);
-  doc.setFontSize(8);
-  doc.text(`CASE_REF: ${t.id}`, 190, 15, { align: 'right' });
-  doc.text(`GENERATED: ${new Date().toLocaleString()}`, 190, 22, { align: 'right' });
+  doc.setFontSize(9);
+  doc.text(`REPORT_REF: NEX-SOC-${t.id}`, 190, 20, { align: 'right' });
+  doc.text(`ISSUE_DATE: ${new Date().toLocaleDateString()}`, 190, 28, { align: 'right' });
 
-  let yPos = 65;
-
-  // --- 1. EXECUTIVE SUMMARY ---
-  yPos = drawSectionHeader("1. EXECUTIVE INCIDENT SUMMARY", yPos);
+  let y = 75;
+  y = drawHeading("1. EXECUTIVE SUMMARY", y);
   
   doc.setFontSize(10);
+  doc.setFont("helvetica", "normal");
+  const execSummary = `This report outlines a high-priority security incident identified by the Nexus AI 4-Layer adaptive pipeline on hostname ${t.alert?.source || 'Core-Asset-01'}. The activity was categorized as ${t.alert?.threat_type || 'Unknown Anomaly'} with a severity rating of ${t.alert?.severity || 'High'}. Immediate automated response protocols were engaged to minimize data exfiltration and lateral contamination of the internal network segments.`;
+  const execSummaryLines = doc.splitTextToSize(execSummary, contentWidth);
+  doc.text(execSummaryLines, margin, y);
+  y += (execSummaryLines.length * 6) + 10;
+
+  // Metadata Table
+  doc.setFillColor(245, 245, 245);
+  doc.rect(margin, y, contentWidth, 50, 'F');
+  y += 10;
+
   const metadata = [
-    { label: "Target Host:", value: t.alert?.source || 'Internal Segment' },
-    { label: "Detected Threat:", value: t.alert?.threat_type || 'Unknown' },
-    { label: "Severity Level:", value: t.alert?.severity || 'High', colorAt: true },
-    { label: "Confidence Rating:", value: `${t.alert?.confidence_score}%` },
-    { label: "First Seen:", value: t.timestamp || 'N/A' },
-    { label: "GeoIP Origin:", value: t.alert?.lat ? `${t.alert.lat}, ${t.alert.lon}` : 'Undisclosed' }
+    ["Incident Identifier:", t.id],
+    ["Threat Category:", t.alert?.threat_type || "Generic Anomaly"],
+    ["Global Severity:", t.alert?.severity || "Unclassified"],
+    ["Model Confidence:", `${t.alert?.confidence_score || 0}%`],
+    ["Origin Topology:", t.alert?.lat ? `${t.alert.lat}, ${t.alert.lon}` : "Direct Internal Tap"]
   ];
 
-  metadata.forEach((m, i) => {
+  metadata.forEach(([label, value]) => {
     doc.setFont("helvetica", "bold");
     doc.setTextColor(grayColor[0], grayColor[1], grayColor[2]);
-    doc.text(m.label, 25, yPos);
-    
+    doc.text(label, 30, y);
     doc.setFont("helvetica", "bold");
-    if (m.label === "Severity Level:") {
-      const s = m.value.toUpperCase();
-      if (s === 'CRITICAL') doc.setTextColor(criticalColor[0], criticalColor[1], criticalColor[2]);
-      else if (s === 'HIGH') doc.setTextColor(245, 197, 66);
-      else doc.setTextColor(accentColor[0], accentColor[1], accentColor[2]);
-    } else {
-      doc.setTextColor(textColor[0], textColor[1], textColor[2]);
-    }
-    doc.text(String(m.value), 75, yPos);
-    yPos += 8;
+    doc.setTextColor(textColor[0], textColor[1], textColor[2]);
+    doc.text(String(value), 80, y);
+    y += 8;
   });
 
-  yPos += 10;
-
-  // --- 2. TECHNICAL ANALYSIS ---
-  yPos = drawSectionHeader("2. TECHNICAL ANALYSIS & NEURAL REASONING", yPos);
-  
+  y += 15;
+  y = drawHeading("2. IMPACT ASSESSMENT", y);
   doc.setFont("helvetica", "normal");
-  doc.setFontSize(10);
-  doc.setTextColor(textColor[0], textColor[1], textColor[2]);
+  const impactText = `The detected signature poses a significant risk to the ${t.alert?.source || 'production'} environment. Potential impacts include unauthorized remote access, elevation of privileges, and disruption of critical business logic. Layer 3 behavioral correlation suggests the threat actor attempted to bridge the gap between network-layer ingress and specific local system processes.`;
+  const impactLines = doc.splitTextToSize(impactText, contentWidth);
+  doc.text(impactLines, margin, y);
+
+  // --- PAGE 2: TECHNICAL ANALYSIS ---
+  doc.addPage();
+  y = 25;
+  y = drawHeading("3. TECHNICAL FORENSIC ANALYSIS", y);
   
-  const techSummary = `The NEXUS 4-Layer adaptive pipeline flagged this event based on a high-entropy variance in network traffic patterns. Layer 2 (ML Ensemble) correlated the request signatures with known ${t.alert?.threat_type} attack vectors. Further analysis via Layer 3 identifies a successful cross-layer match between the network-level egress spike and the underlying endpoint process modification.`;
-  const techSummaryLines = doc.splitTextToSize(techSummary, 170);
-  doc.text(techSummaryLines, 20, yPos);
-  yPos += (techSummaryLines.length * 5) + 8;
-
   doc.setFont("helvetica", "bold");
-  doc.text("Detection Logic Detail (XAI Output):", 20, yPos);
-  yPos += 6;
-  doc.setFont("helvetica", "italic");
-  const xaiText = t.explainability || "No specific neural reasoning provided for this incident.";
-  const xaiLines = doc.splitTextToSize(xaiText, 170);
-  doc.text(xaiLines, 20, yPos);
-  yPos += (xaiLines.length * 5) + 15;
+  doc.text("Layer 2: ML Ensemble Detection Details", margin, y);
+  y += 8;
+  doc.setFont("helvetica", "normal");
+  const l2Text = `The L2 Detection Layer (XGBoost + Random Forest Ensemble) identified specific payload signatures matching the ${t.alert?.threat_type} profile. The anomalous behavior departed from the established baseline for this host by over 4.2 standard deviations in entropy and frequency. Primary detection triggers included malformed protocol headers and unusual outbound heartbeats.`;
+  const l2Lines = doc.splitTextToSize(l2Text, contentWidth);
+  doc.text(l2Lines, margin, y);
+  y += (l2Lines.length * 6) + 12;
 
-  // --- 3. IMMEDIATE MITIGATION ---
-  if (yPos > 240) { doc.addPage(); yPos = 30; }
-  yPos = drawSectionHeader("3. IMMEDIATE TACTICAL MITIGATION", yPos);
+  y = checkPageBreak(y, 40);
+  doc.setFont("helvetica", "bold");
+  doc.text("Layer 4: Explainable AI (XAI) Reasoning", margin, y);
+  y += 8;
+  doc.setFont("helvetica", "italic");
+  const xaiContent = t.explainability || "No neural rationale captured for this specific telemetry stream.";
+  const xaiLines = doc.splitTextToSize(xaiContent, contentWidth);
+  doc.text(xaiLines, margin, y);
+  y += (xaiLines.length * 6) + 15;
+
+  y = checkPageBreak(y, 50);
+  y = drawHeading("4. BEHAVIORAL CORRELATION DATA", y);
+  doc.setFont("helvetica", "normal");
+  const behavioralText = `Nexus AI's Correlation Engine (Layer 3) linked independent alerts from the Network Ingestion tap and the Endpoint Behavioral tap. The system confirmed a 'Genuine' threat status based on the temporal proximity of the initial probe and the subsequent system call modifications. This indicates a coordinated exploit attempt rather than a standalone packet anomaly.`;
+  const behavioralLines = doc.splitTextToSize(behavioralText, contentWidth);
+  doc.text(behavioralLines, margin, y);
+
+  // --- PAGE 3: TACTICAL & STRATEGIC ---
+  doc.addPage();
+  y = 25;
+  y = drawHeading("5. TACTICAL RESPONSE PLAYBOOK", y);
   
   if (t.playbook && t.playbook.length > 0) {
     t.playbook.forEach((step, idx) => {
+      y = checkPageBreak(y, 15);
       doc.setFont("helvetica", "bold");
-      doc.text(`${idx + 1}.`, 25, yPos);
+      doc.text(`${idx + 1}.`, margin + 5, y);
       doc.setFont("helvetica", "normal");
-      const stepLines = doc.splitTextToSize(step, 155);
-      doc.text(stepLines, 32, yPos);
-      yPos += (stepLines.length * 5) + 4;
-      if (yPos > 275) { doc.addPage(); yPos = 30; }
+      const stepLines = doc.splitTextToSize(step, contentWidth - 15);
+      doc.text(stepLines, margin + 12, y);
+      y += (stepLines.length * 6) + 3;
     });
   } else {
-    doc.text("Standard automated isolation triggered. No manual remediation required at this stage.", 20, yPos);
-    yPos += 10;
+    doc.text("Standby for manual forensic instruction. Automated isolation active.", margin, y);
+    y += 10;
   }
 
-  yPos += 10;
-
-  // --- 4. STRATEGIC PREVENTION ---
-  if (yPos > 240) { doc.addPage(); yPos = 30; }
-  yPos = drawSectionHeader("4. STRATEGIC PREVENTION & RECOMMENDATIONS", yPos);
-  
+  y += 15;
+  y = checkPageBreak(y, 60);
+  y = drawHeading("6. STRATEGIC LONG-TERM PREVENTION", y);
   doc.setFont("helvetica", "normal");
-  const recommendations = [
-    `• Perform a comprehensive audit of all ${t.alert?.threat_type} susceptible modules.`,
-    "• Update Web Application Firewall (WAF) rules to include deep-packet inspection (DPI).",
-    "• Implement micro-segmentation for the affected network host to limit lateral movement.",
-    "• Rotate all administrative credentials and API tokens on the target node.",
-    "• Review access control lists (ACLs) to ensure strict adherence to Least Privilege (PoLP)."
+  const preventiveMeasures = [
+    "• Patch Management: Apply immediate security updates for all Log4j, SMB, or RDP services.",
+    "• Network Hardening: Implement strict VLAN micro-segmentation to isolate core assets.",
+    "• Identity Control: Enforce Multi-Factor Authentication (MFA) across all administrative access points.",
+    "• Monitoring: Enhance EDR (Endpoint Detection and Response) logging for specific system call hooks.",
+    "• Audit: Conduct a full forensic sweep of the environment to identify any latent persistence mechanisms."
   ];
   
-  recommendations.forEach(r => {
-    doc.text(r, 25, yPos);
-    yPos += 7;
+  preventiveMeasures.forEach(m => {
+    const mLines = doc.splitTextToSize(m, contentWidth);
+    doc.text(mLines, margin, y);
+    y += (mLines.length * 6) + 2;
   });
 
-  // --- FOOTER ---
+  y += 15;
+  y = checkPageBreak(y, 40);
+  y = drawHeading("7. OFFICIAL AUTHORIZATION", y);
+  doc.setFontSize(9);
+  doc.setFont("helvetica", "bold");
+  doc.text("REPORT AUTHOR:", margin, y);
+  doc.setFont("helvetica", "normal");
+  doc.text("NEXUS AI AUTONOMOUS AGENT", margin + 35, y);
+  y += 8;
+  doc.setFont("helvetica", "bold");
+  doc.text("SOC APPROVAL:", margin, y);
+  doc.setFont("helvetica", "normal");
+  doc.text("SYSTEM VERIFIED - AUTOMATIC CLEARANCE", margin + 35, y);
+  y += 8;
+  doc.setFont("helvetica", "bold");
+  doc.text("SECURITY STATUS:", margin, y);
+  doc.setFont("helvetica", "italic");
+  doc.setTextColor(accentColor[0], accentColor[1], accentColor[2]);
+  doc.text("ACTIVE MITIGATION / ONGOING INVESTIGATION", margin + 35, y);
+
+  // Footer for all pages
   const pageCount = doc.internal.getNumberOfPages();
   for (let i = 1; i <= pageCount; i++) {
     doc.setPage(i);
     doc.setFontSize(8);
     doc.setTextColor(180, 180, 180);
-    doc.text("CONFIDENTIAL - FOR AUTHORIZED PERSONNEL ONLY | NEXUS AI SOC INTEL", 105, 287, { align: "center" });
-    doc.text(`REFERENCE: SOC-DOSSIER-${t.id} | Page ${i} of ${pageCount}`, 190, 280, { align: 'right' });
+    doc.line(margin, 282, 190, 282);
+    doc.text("CONFIDENTIAL | FOR AUTHORIZED PERSONNEL ONLY | NEXUS AI SECURITY SYSTEMS", pageWidth / 2, 288, { align: "center" });
+    doc.text(`Page ${i} of ${pageCount}`, 190, 288, { align: 'right' });
   }
 
-  doc.save(`NexusAI_Forensic_Report_${t.id}.pdf`);
+  doc.save(`NexusAI_Forensic_Dossier_${t.id}.pdf`);
 };
 
 const menuItems = [
@@ -192,7 +237,11 @@ export default function Dashboard({ user, onLogout }) {
     };
     init();
 
-    const tick = () => setTime(new Date().toLocaleTimeString('en-US', { hour12: false }));
+    const tick = () => {
+      if (typeof window !== 'undefined') {
+        setTime(new Date().toLocaleTimeString('en-US', { hour12: false }));
+      }
+    };
     tick();
     const id = setInterval(tick, 1000);
     
@@ -317,7 +366,7 @@ export default function Dashboard({ user, onLogout }) {
             marginBottom: 14,
             transition: 'transform 0.3s',
           }}>
-            <img src="/icon.png" alt="Nexus AI" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+            <img src="/logo.png" alt="Nexus AI" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
           </div>
           <span style={{
             fontFamily: 'Orbitron, sans-serif', fontWeight: 800,

@@ -1,5 +1,5 @@
 <div align="center">
-  <img src="public/icon.png" width="160" alt="Nexus AI Logo" />
+  <img src="public/logo.png" width="160" alt="Nexus AI Logo" />
   <h1>NEXUS.AI: NEURAL COMMAND CENTER</h1>
 </div>
 

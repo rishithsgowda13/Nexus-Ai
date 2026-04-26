@@ -50,7 +50,7 @@ function LoadingScreen({ onComplete }) {
     >
       {/* Animated rings */}
       <div style={{ position: 'relative', width: 200, height: 200, display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 40 }}>
-        <img src="/icon.png" alt="Nexus AI" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+        <img src="/logo.png" alt="Nexus AI" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
       </div>
 
       <div className="loading-title" style={{ background: 'linear-gradient(to bottom, #f5c542, #b08d26)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', textShadow: 'none' }}>NEXUS.AI</div>

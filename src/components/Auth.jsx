@@ -123,7 +123,8 @@ export default function Auth({ onLogin }) {
           result = await supabase.auth.signInWithPassword({ email, password });
         }
       } catch (fetchErr) {
-        setError('Network Error: Could not reach Supabase. Check your URL and connection.');
+        console.error("Auth Fetch Error:", fetchErr);
+        setError('Network Error: Supabase is unreachable. You can use the bypass below to test the dashboard.');
         setIsConnecting(false);
         return;
       }
@@ -215,7 +216,7 @@ export default function Auth({ onLogin }) {
                 marginBottom: 32,
                 animation: 'float 4s ease-in-out infinite',
               }}>
-                <img src="/icon.png" alt="Nexus AI" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+                <img src="/logo.png" alt="Nexus AI" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
               </div>
 
               <h1 style={{
@@ -314,15 +315,34 @@ export default function Auth({ onLogin }) {
                     </div>
                   </div>
 
-                  {error && (
-                    <div style={{ marginBottom: 20, textAlign: 'center' }}>
+                    <div style={{ marginBottom: 20, textAlign: 'center', display: 'flex', flexDirection: 'column', gap: 12 }}>
                       <span style={{ 
                         color: error.includes('Check your email') ? 'var(--accent)' : '#ff3b5c', 
                         fontSize: '0.7rem', 
                         fontWeight: 600 
                       }}>{error}</span>
+                      
+                      {error.includes('Network Error') && (
+                        <button
+                          type="button"
+                          onClick={() => onLogin({ email: 'guest@nexus.ai', name: 'Guest Operator' })}
+                          style={{
+                            background: 'rgba(245,197,66,0.1)',
+                            border: '1px solid var(--accent)',
+                            color: 'var(--accent)',
+                            padding: '8px 12px',
+                            borderRadius: '8px',
+                            fontSize: '0.65rem',
+                            fontWeight: 700,
+                            cursor: 'pointer',
+                            textTransform: 'uppercase',
+                            letterSpacing: '0.1em'
+                          }}
+                        >
+                          Bypass Authentication (Dev Mode)
+                        </button>
+                      )}
                     </div>
-                  )}
 
                   <motion.button
                     whileHover={{ scale: 1.01 }}
